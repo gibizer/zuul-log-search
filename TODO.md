@@ -1,0 +1,6 @@
+- [ ] Add cache size management 
+- [ ] Add test coverage
+- [ ] Run test in Travis CI
+- [ ] Allow repeating --file in logsearch
+- [ ] Pre validate regex coming from the command line
+- [ ] Support multi line regex
