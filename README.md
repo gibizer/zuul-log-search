@@ -69,7 +69,7 @@ Searching in the logs of the builds
 Search the recent failed nova-next job runs for a certain errors in the 
 nova-compute logs: 
 ```shell
-$ logsearch log --project openstack/nova --branch master --job nova-next --result FAILURE --file controller/logs/screen-n-cpu.txt 'ERROR .* iscsiadm -m discoverydb -o show -P 1
+$ logsearch log --project openstack/nova --branch master --job nova-next --result FAILURE --file controller/logs/screen-n-cpu.txt 'ERROR .* iscsiadm -m discoverydb -o show -P 1'
 Found matching builds:
 +----------------------------------+---------------------+-----------+---------+-----------------------------------+
 | uuid                             | finished            | job       | result  | review                            |
