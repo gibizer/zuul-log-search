@@ -1,0 +1,6 @@
+.logsearch/
+.stestr/
+.tox/*
+.idea/*
+*.egg-info/*
+*.pyc
