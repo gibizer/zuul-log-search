@@ -1,7 +1,7 @@
 import logging
 from typing import List, Dict
 import os
-from urllib.request import urlretrieve
+from urllib import request
 
 import requests
 
@@ -48,4 +48,6 @@ class API:
     @staticmethod
     def fetch_log(build, log_file, local_path, progress_handler) -> None:
         url = os.path.join(build["log_url"], log_file)
-        urlretrieve(url=url, filename=local_path, reporthook=progress_handler)
+        request.urlretrieve(
+            url=url, filename=local_path, reporthook=progress_handler
+        )
