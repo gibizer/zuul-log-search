@@ -1,11 +1,24 @@
 import argparse
 import logging
-from typing import List, Dict
+import re
+from typing import List, Dict, Callable
 
 import prettytable  # type: ignore
 
 from logsearch import zuul
 from logsearch import search
+
+
+LOG = logging.getLogger("__main__")
+
+
+class BaseException(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+        super().__init__(msg)
+
+    def __str__(self):
+        return self.msg
 
 
 class BuildsTable:
@@ -125,8 +138,8 @@ class ArgHandler:
         arg_parser.add_argument(
             "--result",
             type=str,
-            help="The result of the build."
-            "E.g. SUCCESS, FAILURE, POST_FAILURE, TIMED_OUT",
+            choices=["SUCCESS", "FAILURE", "POST_FAILURE", "TIMED_OUT"],
+            help="The result of the build.",
         )
         arg_parser.add_argument(
             "--voting",
@@ -199,8 +212,20 @@ class ArgHandler:
             help="A relative filepath within the build directory to search in."
             "Defaulted to ./job-output.txt",
         )
+
+        def regex(value):
+            try:
+                re.compile(value)
+            except re.error as e:
+                raise BaseException(
+                    f"Invalid regex: '{value}'; " + str(e)
+                ) from e
+            return value
+
         log_parser.add_argument(
-            "regex", help="A regular expression to search for."
+            "regex",
+            help="A regular expression to search for.",
+            type=regex,
         )
         log_parser.set_defaults(
             func=lambda args: self.logsearch_handler(
@@ -210,16 +235,21 @@ class ArgHandler:
 
         return arg_parser.parse_args()
 
-    def handle_subcommand(self) -> None:
+    def get_subcommand_handler(self) -> Callable:
         args = self._parse_args()
-        return args.func(args)
+        return lambda: args.func(args)
 
 
 def main() -> None:
-    ArgHandler(
-        build_handler=BuildCmd,
-        logsearch_handler=LogSearchCmd,
-    ).handle_subcommand()
+    try:
+        arg_handler = ArgHandler(
+            build_handler=BuildCmd,
+            logsearch_handler=LogSearchCmd,
+        )
+        handler = arg_handler.get_subcommand_handler()
+        handler()
+    except BaseException as e:
+        print(e)
 
 
 if __name__ == "__main__":
