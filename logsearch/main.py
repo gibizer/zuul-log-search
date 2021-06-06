@@ -90,14 +90,17 @@ class LogSearchCmd(Cmd):
         print("Searching logs:")
         ls = search.LogSearch(cache)
         for build in builds:
-            matches = ls.get_matches(build, args.file, args.regex)
-            for match in ls.get_matches(build, args.file, args.regex):
-                print(
-                    f"{build['uuid']}:"
-                    f"{match['data']['line_number']}:"
-                    f"{match['data']['lines']['text'].rstrip()}"
-                )
-            if matches:
+            lines = ls.get_matches(
+                build,
+                args.file,
+                args.regex,
+                args.before_context,
+                args.after_context,
+                args.context,
+            )
+            for line in lines:
+                print(f"{build['uuid']}:{line}")
+            if lines:
                 print()
 
 
@@ -211,6 +214,23 @@ class ArgHandler:
             default="job-output.txt",
             help="A relative filepath within the build directory to search in."
             "Defaulted to ./job-output.txt",
+        )
+        log_parser.add_argument(
+            "-B",
+            "--before-context",
+            help="Print number of lines of leading context before matching"
+            "lines",
+        )
+        log_parser.add_argument(
+            "-A",
+            "--after-context",
+            help="Print number of lines of trailing context after matching"
+            "lines",
+        )
+        log_parser.add_argument(
+            "-C",
+            "--context",
+            help="Print number of context lines",
         )
 
         def regex(value):

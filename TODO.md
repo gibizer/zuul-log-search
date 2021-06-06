@@ -10,9 +10,9 @@
 - [ ] Show build result table columns based on provided query parameters
 - [ ] Re-print filtered build table based on grep results
 - [ ] Add subcommand for showing a single build metadata
-- [ ] Support grep before, after, context lines
 
 Done:
 - [x] Pre validate regex coming from the command line
 - [x] Validate values of --result as a wrong value leads to empty search
   result form Zuul
+- [x] Support grep before, after, context lines
