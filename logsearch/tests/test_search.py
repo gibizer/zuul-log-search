@@ -38,7 +38,7 @@ class TestSearch(unittest.TestCase):
             ls = search.LogSearch(search.BuildLogCache(temp_dir, fake_zuul))
             lines = ls.get_matches(
                 self.build,
-                "fake_file_path",
+                {"fake_file_path"},
                 regex,
                 before_context,
                 after_context,

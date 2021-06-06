@@ -1,7 +1,6 @@
 - [ ] Add cache size management 
 - [ ] Add test coverage
 - [ ] Run test in Travis CI
-- [ ] Allow repeating --file in logsearch
 - [ ] Allow repeating --job
 - [ ] Config file to provider default search config
 - [ ] Config file to define job categories (e.g. devstack based jobs) that can
@@ -18,3 +17,4 @@ Done:
 - [x] Validate values of --result as a wrong value leads to empty search
   result form Zuul
 - [x] Support grep before, after, context lines
+- [x] Allow repeating --file in logsearch

@@ -2,7 +2,7 @@ import contextlib
 import json
 import logging
 import os
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Set
 import urllib.error
 
 import ripgrepy  # type: ignore
@@ -74,17 +74,22 @@ class LogSearch:
     def get_matches(
         self,
         build: Dict,
-        rel_path: str,
+        rel_paths: Set[str],
         regexp: str,
         before_context: Optional[int],
         after_context: Optional[int],
         context: Optional[int],
     ) -> List[str]:
-        local_path = self.cache.ensure_build_log_file(build, rel_path)
+        local_paths = []
+        for rel_path in rel_paths:
+            local_paths.append(
+                self.cache.ensure_build_log_file(build, rel_path)
+            )
         # ripgrepy is very noisy on debug level and unfortunately using the
         # root logger
         with self._silence_log():
-            rg = ripgrepy.Ripgrepy(regexp, local_path)
+            # TODO(gibi): Change Ripgrepy to support multiple paths naturally
+            rg = ripgrepy.Ripgrepy(regexp, " ".join(local_paths))
             rg.line_number()
             if before_context:
                 rg.before_context(before_context)
