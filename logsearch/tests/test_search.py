@@ -10,7 +10,7 @@ class FakeZuul(zuul.API):
     def __init__(self, lines: List[str]) -> None:
         super().__init__("fake_zuul_url")
         self.file_content = "\n".join(lines)
-        self.fetched_files = []
+        self.fetched_files: List[str] = []
 
     def fetch_log(self, build, log_file, local_path, progress_handler):
         with open(local_path, "w") as f:
