@@ -10,6 +10,8 @@
 - [ ] Show build result table columns based on provided query parameters
 - [ ] Re-print filtered build table based on grep results
 - [ ] Add subcommand for showing a single build metadata
+- [ ] Make the output format of the log subcommand configurable. E.g. full,
+  only-matched-lines
 
 Done:
 - [x] Pre validate regex coming from the command line
