@@ -22,22 +22,59 @@ class BaseException(Exception):
 
 
 class BuildsTable:
-    def __init__(self, builds: List[Dict]) -> None:
+    ARG_TO_FIELD_NAMES = {
+        "jobs": "job_name",
+        "branches": "branch",
+    }
+
+    DEFAULT_FIELDS = ["uuid", "end_time", "ref_url"]
+    FIELD_TO_COLUMN_NAMES = {
+        "ref_url": "review",
+        "end_time": "finished",
+        "job_name": "job",
+    }
+
+    def __init__(self, builds: List[Dict], args: argparse.Namespace) -> None:
         self.builds = builds
+        self.extra_fields = self._get_extra_field_names_from_requested_args(
+            args
+        )
+
+    def _get_extra_field_names_from_requested_args(
+        self, args: argparse.Namespace
+    ) -> List[str]:
+        """Calculate what build fields to show based on the requested args.
+
+        Fields handled by non repeatable args are shown when the user is not
+        filtering for a specific value of the field.
+
+        Fields handled by repeatable args are shown when the user is either not
+        filtering or filtering for multiple values.
+        """
+        fields = []
+        for arg_name in ["project", "pipeline", "result"]:
+            if getattr(args, arg_name) is None:
+                fields.append(self.ARG_TO_FIELD_NAMES.get(arg_name, arg_name))
+
+        for arg_name in ["branches", "jobs"]:
+            value = getattr(args, arg_name)
+            if value == [] or len(value) > 1:
+                fields.append(self.ARG_TO_FIELD_NAMES.get(arg_name, arg_name))
+
+        return fields
 
     def __str__(self) -> str:
         t = prettytable.PrettyTable()
-        t.field_names = ["uuid", "finished", "job", "result", "review"]
-        for build in self.builds:
-            t.add_row(
-                [
-                    build["uuid"],
-                    build["end_time"],
-                    build["job_name"],
-                    build["result"],
-                    build["ref_url"],
-                ]
+        for field_name in self.DEFAULT_FIELDS + self.extra_fields:
+            t.add_column(
+                self.FIELD_TO_COLUMN_NAMES.get(field_name, field_name), []
             )
+
+        for build in self.builds:
+            row = []
+            for field_name in self.DEFAULT_FIELDS + self.extra_fields:
+                row.append(build.get(field_name))
+            t.add_row(row)
         t.align = "l"
         return t.__str__()
 
@@ -64,7 +101,7 @@ class BuildCmd(Cmd):
             args.voting,
             args.limit,
         )
-        print(BuildsTable(builds))
+        print(BuildsTable(builds, args))
 
 
 class LogSearchCmd(Cmd):
@@ -86,7 +123,7 @@ class LogSearchCmd(Cmd):
             args.limit,
         )
         print("Found matching builds:")
-        print(BuildsTable(builds))
+        print(BuildsTable(builds, args))
         print("Downloading logs:")
         cache = search.BuildLogCache(args.log_store_dir, self.zuul_api)
         for build in builds:
