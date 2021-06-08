@@ -58,8 +58,8 @@ class BuildCmd(Cmd):
             args.tenant,
             args.project,
             args.pipeline,
-            args.job,
-            args.branch,
+            args.jobs,
+            args.branches,
             args.result,
             args.voting,
             args.limit,
@@ -79,8 +79,8 @@ class LogSearchCmd(Cmd):
             args.tenant,
             args.project,
             args.pipeline,
-            args.job,
-            args.branch,
+            args.jobs,
+            args.branches,
             args.result,
             args.voting,
             args.limit,
@@ -136,13 +136,19 @@ class ArgHandler:
         )
         arg_parser.add_argument(
             "--job",
-            type=str,
-            help="The name of Zuul job run the build",
+            dest="jobs",
+            default=[],
+            action="append",
+            help="The name of Zuul job run the build. "
+            "Can be repeated to express OR relationship.",
         )
         arg_parser.add_argument(
             "--branch",
-            type=str,
-            help="The name of the git branch the build run on",
+            dest="branches",
+            default=[],
+            action="append",
+            help="The name of the git branch the build run on. "
+            "Can be repeated to express OR relationship.",
         )
         arg_parser.add_argument(
             "--result",

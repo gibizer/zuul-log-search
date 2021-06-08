@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict
+from typing import List, Dict, Optional
 import os
 from urllib import request
 
@@ -15,23 +15,21 @@ class API:
     def list_builds(
         self,
         tenant,
-        project=None,
-        pipeline=None,
-        job=None,
-        branch=None,
-        result=None,
-        voting=None,
-        limit=None,
+        project: Optional[str],
+        pipeline: Optional[str],
+        jobs: List[str],
+        branches: List[str],
+        result: Optional[str],
+        voting: Optional[bool],
+        limit: Optional[int],
     ) -> List[Dict]:
-        params = {}
+        params: Dict = {}
         if project is not None:
             params["project"] = project
         if pipeline is not None:
             params["pipeline"] = pipeline
-        if job is not None:
-            params["job_name"] = job
-        if branch is not None:
-            params["branch"] = branch
+        params["job_name"] = jobs
+        params["branch"] = branches
         if result is not None:
             params["result"] = result
         if voting is not None:

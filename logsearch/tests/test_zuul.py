@@ -15,11 +15,24 @@ class TestZuulAPI(unittest.TestCase):
 
         api = zuul.API(zuul_url="https://fake_url")
 
-        result = api.list_builds(tenant=mock.sentinel.tenant)
+        result = api.list_builds(
+            tenant=mock.sentinel.tenant,
+            project=None,
+            pipeline=None,
+            branches=[],
+            jobs=[],
+            result=None,
+            limit=None,
+            voting=None,
+        )
 
         self.assertEqual(mock.sentinel.json_rsp, result)
         mock_get.assert_called_once_with(
-            "https://fake_url/tenant/sentinel.tenant/builds", params={}
+            "https://fake_url/tenant/sentinel.tenant/builds",
+            params={
+                "job_name": [],
+                "branch": [],
+            },
         )
         mock_rsp.json.assert_called_once_with()
         mock_rsp.raise_for_status.assert_called_once_with()
@@ -36,8 +49,8 @@ class TestZuulAPI(unittest.TestCase):
             tenant="a_tenant",
             project="a_project",
             pipeline="a_pipeline",
-            branch="a_branch",
-            job="a_job",
+            branches=["a_branch", "b_branch"],
+            jobs=["a_job", "b_job"],
             result="a_result",
             limit=10,
             voting=True,
@@ -48,8 +61,8 @@ class TestZuulAPI(unittest.TestCase):
             params={
                 "project": "a_project",
                 "pipeline": "a_pipeline",
-                "job_name": "a_job",
-                "branch": "a_branch",
+                "job_name": ["a_job", "b_job"],
+                "branch": ["a_branch", "b_branch"],
                 "result": "a_result",
                 "voting": "1",
                 "limit": 10,
