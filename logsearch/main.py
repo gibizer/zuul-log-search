@@ -71,10 +71,10 @@ class LogSearchCmd(Cmd):
     def execute(self, args: argparse.Namespace) -> None:
         super().execute(args)
         # ensure that file list has unique elements
-        args.file = set(args.file)
+        args.files = set(args.files)
         # if not provided default it
-        if not args.file:
-            args.file = {"./job-output.txt"}
+        if not args.files:
+            args.files = {"job-output.txt"}
         builds = self.zuul_api.list_builds(
             args.tenant,
             args.project,
@@ -90,7 +90,7 @@ class LogSearchCmd(Cmd):
         print("Downloading logs:")
         cache = search.BuildLogCache(args.log_store_dir, self.zuul_api)
         for build in builds:
-            for file in args.file:
+            for file in args.files:
                 cache.ensure_build_log_file(build, file)
 
         print("Searching logs:")
@@ -98,7 +98,7 @@ class LogSearchCmd(Cmd):
         for build in builds:
             lines = ls.get_matches(
                 build,
-                args.file,
+                args.files,
                 args.regex,
                 args.before_context,
                 args.after_context,
@@ -217,10 +217,11 @@ class ArgHandler:
         self._add_build_filter_args(log_parser)
         log_parser.add_argument(
             "--file",
+            dest="files",
             default=[],
             action="append",
             help="A relative filepath within the build directory to search "
-            "in. Can be repeated. Defaulted to ./job-output.txt",
+            "in. Can be repeated. Defaulted to job-output.txt",
         )
         log_parser.add_argument(
             "-B",

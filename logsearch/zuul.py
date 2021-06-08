@@ -48,6 +48,7 @@ class API:
     @staticmethod
     def fetch_log(build, log_file, local_path, progress_handler) -> None:
         url = os.path.join(build["log_url"], log_file)
+        LOG.debug(f"Fetching {url}")
         request.urlretrieve(
             url=url, filename=local_path, reporthook=progress_handler
         )
