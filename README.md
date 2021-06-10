@@ -27,7 +27,8 @@ $ logseach --help
 usage: Search Zuul CI results
 
 positional arguments:
-  {build,log}
+  {build-show,build,log}
+    build-show          Show the metadata of a specific build
     build               Search for builds
     log                 Search the logs of the builds
 
@@ -35,10 +36,10 @@ optional arguments:
   -h, --help            show this help message and exit
   --debug               Print debug logs
   --zuul_api_url ZUUL_API_URL
-                        The API url of the Zuul deployment to use. 
+                        The API url of the Zuul deployment to use.
                         Defaulted to the OpenDev Zuul (https://zuul.opendev.org/api)
   --log_store_dir LOG_STORE_DIR
-                        The local directory to download the logs to. 
+                        The local directory to download the logs to.
                         Defaulted to .logsearch
 ```
 

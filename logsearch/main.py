@@ -1,6 +1,7 @@
 import argparse
 import logging
 import re
+import traceback
 from typing import List, Dict, Callable
 
 import prettytable  # type: ignore
@@ -12,13 +13,37 @@ from logsearch import search
 LOG = logging.getLogger("__main__")
 
 
-class BaseException(Exception):
+class CmdException(Exception):
     def __init__(self, msg):
         self.msg = msg
         super().__init__(msg)
 
     def __str__(self):
         return self.msg
+
+
+class BuildTable:
+    def __init__(self, build):
+        self.build = build
+
+    def __str__(self):
+        t = prettytable.PrettyTable()
+        t.field_names = ["field", "value"]
+        t.add_rows(
+            [
+                ["uuid", self.build["uuid"]],
+                ["finished", self.build["end_time"]],
+                ["project", self.build["project"]],
+                ["branch", self.build["branch"]],
+                ["job", self.build["job_name"]],
+                ["pipeline", self.build["pipeline"]],
+                ["result", self.build["result"]],
+                ["review", self.build["ref_url"]],
+                ["log url", self.build["log_url"]],
+            ]
+        )
+        t.align = "l"
+        return t.__str__()
 
 
 class BuildsTable:
@@ -88,6 +113,17 @@ class Cmd:
             logging.basicConfig(level=logging.DEBUG)
 
 
+class BuildShowCmd(Cmd):
+    def execute(self, args: argparse.Namespace) -> None:
+        super().execute(args)
+        cache = search.BuildLogCache(args.log_store_dir, self.zuul_api)
+        try:
+            build = cache.get_build_metadata(args.uuid)
+        except FileNotFoundError as e:
+            raise CmdException(f"Build {args.uuid} is not cached.") from e
+        print(BuildTable(build))
+
+
 class BuildCmd(Cmd):
     def execute(self, args: argparse.Namespace) -> None:
         super().execute(args)
@@ -148,8 +184,11 @@ class LogSearchCmd(Cmd):
 
 
 class ArgHandler:
-    def __init__(self, build_handler, logsearch_handler) -> None:
+    def __init__(
+        self, build_handler, build_show_handler, logsearch_handler
+    ) -> None:
         self.build_handler = build_handler
+        self.build_show_handler = build_show_handler
         self.logsearch_handler = logsearch_handler
 
     @staticmethod
@@ -242,6 +281,21 @@ class ArgHandler:
 
         subparsers = arg_parser.add_subparsers()
 
+        build_show_parser = subparsers.add_parser(
+            "build-show",
+            help="Show the metadata of a specific build",
+        )
+        build_show_parser.add_argument(
+            "uuid",
+            type=str,
+            help="The UUID of the build",
+        )
+        build_show_parser.set_defaults(
+            func=lambda args: self.build_show_handler(
+                zuul.API(args.zuul_api_url)
+            ).execute(args)
+        )
+
         build_parser = subparsers.add_parser(
             "build",
             help="Search for builds",
@@ -288,7 +342,7 @@ class ArgHandler:
             try:
                 re.compile(value)
             except re.error as e:
-                raise BaseException(
+                raise CmdException(
                     f"Invalid regex: '{value}'; " + str(e)
                 ) from e
             return value
@@ -315,12 +369,14 @@ def main() -> None:
     try:
         arg_handler = ArgHandler(
             build_handler=BuildCmd,
+            build_show_handler=BuildShowCmd,
             logsearch_handler=LogSearchCmd,
         )
         handler = arg_handler.get_subcommand_handler()
         handler()
-    except BaseException as e:
+    except CmdException as e:
         print(e)
+        LOG.debug(traceback.format_exc())
 
 
 if __name__ == "__main__":

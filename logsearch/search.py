@@ -59,6 +59,12 @@ class BuildLogCache:
 
         return local_path
 
+    def get_build_metadata(self, build_uuid):
+        path = self._get_local_path(build_uuid, "build.meta")
+        with open(path, "r") as f:
+            build = json.load(f)
+        return build
+
 
 class LogSearch:
     def __init__(self, cache: BuildLogCache) -> None:
