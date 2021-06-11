@@ -243,7 +243,13 @@ class ArgHandler:
         arg_parser.add_argument(
             "--result",
             type=str,
-            choices=["SUCCESS", "FAILURE", "POST_FAILURE", "TIMED_OUT"],
+            choices=[
+                "SUCCESS",
+                "FAILURE",
+                "POST_FAILURE",
+                "TIMED_OUT",
+                "LOST",
+            ],
             help="The result of the build.",
         )
         arg_parser.add_argument(
