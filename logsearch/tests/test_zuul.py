@@ -1,3 +1,4 @@
+import tempfile
 import unittest
 from unittest import mock
 
@@ -71,20 +72,19 @@ class TestZuulAPI(unittest.TestCase):
         mock_rsp.json.assert_called_once_with()
         mock_rsp.raise_for_status.assert_called_once_with()
 
-    @mock.patch("urllib.request.urlretrieve")
-    def test_fetch_log(self, mock_retrieve):
+    @mock.patch("requests.get")
+    def test_fetch_log(self, mock_get):
         api = zuul.API(zuul_url="https://fake_url")
         build = {"log_url": "https://fake_log_url"}
 
-        api.fetch_log(
-            build,
-            "controller/n-cpu.log",
-            "./logsearch/cache/build-id/controller/n-cpu.log",
-            mock.sentinel.progress_handler,
-        )
+        with tempfile.NamedTemporaryFile() as f:
+            api.fetch_log(
+                build,
+                "controller/n-cpu.log",
+                f.name,
+                mock.sentinel.progress_handler,
+            )
 
-        mock_retrieve.assert_called_once_with(
-            url="https://fake_log_url/controller/n-cpu.log",
-            filename="./logsearch/cache/build-id/controller/n-cpu.log",
-            reporthook=mock.sentinel.progress_handler,
+        mock_get.assert_called_once_with(
+            "https://fake_log_url/controller/n-cpu.log", stream=True
         )

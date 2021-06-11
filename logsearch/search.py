@@ -38,7 +38,7 @@ class BuildLogCache:
 
         self._cache_build_meta(build)
 
-        def report_progress(block_number, read_size, total_size):
+        def report_progress(block_number):
             print("Downloading", block_number, end="\r")
 
         local_path = self._get_local_path(build["uuid"], rel_path_to_log_file)

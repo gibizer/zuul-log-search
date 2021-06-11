@@ -1,7 +1,6 @@
 import logging
 from typing import List, Dict, Optional
 import os
-from urllib import request
 
 import requests
 
@@ -47,6 +46,10 @@ class API:
     def fetch_log(build, log_file, local_path, progress_handler) -> None:
         url = os.path.join(build["log_url"], log_file)
         LOG.debug(f"Fetching {url}")
-        request.urlretrieve(
-            url=url, filename=local_path, reporthook=progress_handler
-        )
+        i = 0
+        with requests.get(url, stream=True) as r:
+            with open(local_path, "wb") as f:
+                for chunk in r.iter_content(chunk_size=10 * 1024):
+                    f.write(chunk)
+                    i += 1
+                    progress_handler(i)
