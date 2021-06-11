@@ -38,7 +38,10 @@ class BuildTable:
                 ["job", self.build["job_name"]],
                 ["pipeline", self.build["pipeline"]],
                 ["result", self.build["result"]],
-                ["review", self.build["ref_url"]],
+                [
+                    "review",
+                    self.build["ref_url"] + "/" + self.build["patchset"],
+                ],
                 ["log url", self.build["log_url"]],
             ]
         )
@@ -98,7 +101,10 @@ class BuildsTable:
         for build in self.builds:
             row = []
             for field_name in self.DEFAULT_FIELDS + self.extra_fields:
-                row.append(build.get(field_name))
+                if field_name == "ref_url":
+                    row.append(build["ref_url"] + "/" + build["patchset"])
+                else:
+                    row.append(build.get(field_name))
             t.add_row(row)
         t.align = "l"
         return t.__str__()
