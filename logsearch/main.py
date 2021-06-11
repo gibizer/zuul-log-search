@@ -191,7 +191,9 @@ class LogSearchCmd(Cmd):
                 matching_builds.append(build)
                 print()
 
-        print("Builds with matching logs:")
+        print(
+            f"Builds with matching logs {len(matching_builds)}/{len(builds)}:"
+        )
         print(BuildsTable(matching_builds, args))
 
 
