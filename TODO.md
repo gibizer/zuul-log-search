@@ -5,7 +5,6 @@
 - [ ] Config file to define job categories (e.g. devstack based jobs) that can
   be used in --job search
 - [ ] Support multi line regex
-- [ ] Re-print filtered build table based on grep results
 - [ ] Make the output format of the log subcommand configurable. E.g. full,
   only-matched-lines
 
@@ -18,3 +17,4 @@ Done:
 - [x] Allow repeating --job
 - [x] Show build result table columns based on provided query parameters
 - [x] Add subcommand for showing a single build metadata
+- [x] Re-print filtered build table based on grep results

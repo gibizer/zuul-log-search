@@ -166,6 +166,7 @@ class LogSearchCmd(Cmd):
         )
         print("Found matching builds:")
         print(BuildsTable(builds, args))
+
         print("Downloading logs:")
         cache = search.BuildLogCache(args.log_store_dir, self.zuul_api)
         for build in builds:
@@ -174,6 +175,7 @@ class LogSearchCmd(Cmd):
 
         print("Searching logs:")
         ls = search.LogSearch(cache)
+        matching_builds = []
         for build in builds:
             lines = ls.get_matches(
                 build,
@@ -186,7 +188,11 @@ class LogSearchCmd(Cmd):
             for line in lines:
                 print(f"{build['uuid']}:{line}")
             if lines:
+                matching_builds.append(build)
                 print()
+
+        print("Builds with matching logs:")
+        print(BuildsTable(matching_builds, args))
 
 
 class ArgHandler:
