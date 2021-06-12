@@ -87,7 +87,7 @@ class ArgHandler:
             help="Number of builds returned. Defaulted to 10",
         )
 
-    def _parse_args(self) -> argparse.Namespace:
+    def _parse_args(self, sys_args) -> argparse.Namespace:
         arg_parser = argparse.ArgumentParser(usage="Search Zuul CI results")
         arg_parser.add_argument(
             "--debug",
@@ -192,21 +192,21 @@ class ArgHandler:
             ).execute(args)
         )
 
-        return arg_parser.parse_args()
+        return arg_parser.parse_args(args=sys_args)
 
-    def get_subcommand_handler(self) -> Callable:
-        args = self._parse_args()
+    def get_subcommand_handler(self, sys_args) -> Callable:
+        args = self._parse_args(sys_args)
         return lambda: args.func(args)
 
 
-def main() -> None:
+def main(args=tuple(sys.argv[1:])) -> None:
     try:
         arg_handler = ArgHandler(
             build_handler=handlers.BuildCmd,
             build_show_handler=handlers.BuildShowCmd,
             logsearch_handler=handlers.LogSearchCmd,
         )
-        handler = arg_handler.get_subcommand_handler()
+        handler = arg_handler.get_subcommand_handler(args)
         handler()
     except handlers.CmdException as e:
         print(e)
