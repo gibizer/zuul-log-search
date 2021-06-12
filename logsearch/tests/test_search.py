@@ -1,6 +1,5 @@
 import os.path
 import tempfile
-from typing import List
 import unittest
 from unittest import mock
 
@@ -8,17 +7,7 @@ import requests
 
 from logsearch import search
 from logsearch import zuul
-
-
-class FakeZuul(zuul.API):
-    def __init__(self) -> None:
-        super().__init__("fake_zuul_url")
-        self.fetched_files: List[str] = []
-
-    def fetch_log(self, build, log_file, local_path, progress_handler):
-        with open(local_path, "w") as f:
-            f.write("fake log data")
-        self.fetched_files.append(log_file)
+from logsearch.tests.fakes import FakeZuul
 
 
 class TestBuildLogCache(unittest.TestCase):
