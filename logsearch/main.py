@@ -1,4 +1,5 @@
 import argparse
+import collections
 import logging
 import re
 import traceback
@@ -164,31 +165,40 @@ class LogSearchCmd(Cmd):
             args.voting,
             args.limit,
         )
-        print("Found matching builds:")
+        print("Found builds:")
         print(BuildsTable(builds, args))
 
         print("Downloading logs:")
         cache = search.BuildLogCache(args.log_store_dir, self.zuul_api)
+        build_uuid_to_build = {build["uuid"]: build for build in builds}
+        build_uuid_to_files = collections.defaultdict(set)
         for build in builds:
+            if not build["log_url"]:
+                print(f"{build['uuid']}: empty log URL. Skipping.")
+                continue
+
             for file in args.files:
-                cache.ensure_build_log_file(build, file)
+                # if the download fails the the result is None, skip searching
+                # those files
+                local_path = cache.ensure_build_log_file(build, file)
+                if local_path:
+                    build_uuid_to_files[build["uuid"]].add(local_path)
 
         print("Searching logs:")
-        ls = search.LogSearch(cache)
+        ls = search.LogSearch()
         matching_builds = []
-        for build in builds:
+        for build_uuid in build_uuid_to_files.keys():
             lines = ls.get_matches(
-                build,
-                args.files,
+                build_uuid_to_files[build_uuid],
                 args.regex,
                 args.before_context,
                 args.after_context,
                 args.context,
             )
             for line in lines:
-                print(f"{build['uuid']}:{line}")
+                print(f"{build_uuid}:{line}")
             if lines:
-                matching_builds.append(build)
+                matching_builds.append(build_uuid_to_build[build_uuid])
                 print()
 
         print(

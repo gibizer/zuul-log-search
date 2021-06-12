@@ -1,29 +1,72 @@
+import os.path
 import tempfile
 from typing import List
 import unittest
+from unittest import mock
+
+import requests
 
 from logsearch import search
 from logsearch import zuul
 
 
 class FakeZuul(zuul.API):
-    def __init__(self, lines: List[str]) -> None:
+    def __init__(self) -> None:
         super().__init__("fake_zuul_url")
-        self.file_content = "\n".join(lines)
         self.fetched_files: List[str] = []
 
     def fetch_log(self, build, log_file, local_path, progress_handler):
         with open(local_path, "w") as f:
-            f.write(self.file_content)
+            f.write("fake log data")
         self.fetched_files.append(log_file)
 
 
-class TestSearch(unittest.TestCase):
-    def setUp(self):
-        self.build = {
-            "uuid": "build-1",
-        }
+class TestBuildLogCache(unittest.TestCase):
+    def test_ensure_build_log_file_needs_to_fetch(self):
+        build = {"uuid": "fake_uuid", "log_url": "http://fake_log_url/"}
+        fake_zuul = FakeZuul()
+        with tempfile.TemporaryDirectory() as cache_dir:
+            cache = search.BuildLogCache(cache_dir, fake_zuul)
 
+            local_path = cache.ensure_build_log_file(build, "log-file-path")
+
+            self.assertEqual(["log-file-path"], fake_zuul.fetched_files)
+            self.assertTrue(local_path.endswith("fake_uuid/log-file-path"))
+
+    def test_ensure_build_log_already_cached(self):
+        build = {"uuid": "fake_uuid", "log_url": "http://fake_log_url/"}
+        fake_zuul = FakeZuul()
+        with tempfile.TemporaryDirectory() as cache_dir:
+            cache = search.BuildLogCache(cache_dir, fake_zuul)
+            # download it once
+            local_path = cache.ensure_build_log_file(build, "log-file-path")
+            # but not the second time
+            local_path = cache.ensure_build_log_file(build, "log-file-path")
+            # file only downloaded once
+            self.assertEqual(["log-file-path"], fake_zuul.fetched_files)
+            self.assertTrue(local_path.endswith("fake_uuid/log-file-path"))
+            self.assertTrue(os.path.exists(local_path))
+
+    def test_ensure_build_log_file_download_fails(self):
+        build = {"uuid": "fake_uuid", "log_url": "http://fake_log_url/"}
+        mock_zuul = mock.Mock(spec=zuul.API)
+        mock_zuul.fetch_log.side_effect = requests.HTTPError()
+
+        with tempfile.TemporaryDirectory() as cache_dir:
+            cache = search.BuildLogCache(cache_dir, mock_zuul)
+
+            local_path = cache.ensure_build_log_file(build, "log-file-path")
+
+            mock_zuul.fetch_log.assert_called_once_with(
+                build,
+                "log-file-path",
+                os.path.join(cache_dir, "fake_uuid/log-file-path"),
+                mock.ANY,
+            )
+            self.assertIsNone(local_path)
+
+
+class TestSearch(unittest.TestCase):
     def _test_search(
         self,
         log_lines,
@@ -33,12 +76,13 @@ class TestSearch(unittest.TestCase):
         after_context=None,
         context=None,
     ):
-        fake_zuul = FakeZuul(lines=log_lines)
-        with tempfile.TemporaryDirectory() as temp_dir:
-            ls = search.LogSearch(search.BuildLogCache(temp_dir, fake_zuul))
+        with tempfile.NamedTemporaryFile() as f:
+            f.write("\n".join(log_lines).encode())
+            f.flush()
+
+            ls = search.LogSearch()
             lines = ls.get_matches(
-                self.build,
-                {"fake_file_path"},
+                {f.name},
                 regex,
                 before_context,
                 after_context,
@@ -52,9 +96,6 @@ class TestSearch(unittest.TestCase):
         )
         for expected, actual in zip(expected_match_lines, lines):
             self.assertEqual(expected, actual)
-
-        self.assertEqual(1, len(fake_zuul.fetched_files))
-        self.assertEqual("fake_file_path", fake_zuul.fetched_files[0])
 
     def test_no_match(self):
         self._test_search(

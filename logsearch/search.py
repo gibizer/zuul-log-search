@@ -3,8 +3,8 @@ import json
 import logging
 import os
 from typing import List, Dict, Optional, Set
-import urllib.error
 
+import requests.exceptions
 import ripgrepy  # type: ignore
 
 from logsearch import zuul
@@ -33,29 +33,32 @@ class BuildLogCache:
 
     def ensure_build_log_file(
         self, build: Dict, rel_path_to_log_file: str
-    ) -> str:
+    ) -> Optional[str]:
         """Checks if the log exists in the cache and if not downloads it"""
 
         self._cache_build_meta(build)
 
         def report_progress(block_number):
-            print("Downloading", block_number, end="\r")
+            print("\rDownloading", block_number, " ", end="")
 
         local_path = self._get_local_path(build["uuid"], rel_path_to_log_file)
         if not os.path.exists(local_path):
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
-            print(f"{build['uuid']}: {rel_path_to_log_file}")
+            print(f"{build['uuid']}: {rel_path_to_log_file}: ")
             try:
                 self.zuul_api.fetch_log(
                     build, rel_path_to_log_file, local_path, report_progress
                 )
-            except urllib.error.HTTPError as e:
+                print("Done")
+            except requests.exceptions.RequestException as e:
+                msg = "Download failed: "
+                if e.response is not None:
+                    msg += f"HTTP {e.response.status_code}"
+                else:
+                    msg += e.__class__.__name__
+                print(msg)
                 LOG.debug(f"Fetching log failed: {e}")
-                # Cache an empty file instead. This is a cheap hack but makes
-                # everything work without the need to propagate the error and
-                # filter already deleted builds
-                with open(local_path, "a"):
-                    pass
+                return None
 
         return local_path
 
@@ -67,9 +70,6 @@ class BuildLogCache:
 
 
 class LogSearch:
-    def __init__(self, cache: BuildLogCache) -> None:
-        self.cache = cache
-
     @contextlib.contextmanager
     def _silence_log(self):
         old_level = logging.getLogger("root").getEffectiveLevel()
@@ -79,18 +79,12 @@ class LogSearch:
 
     def get_matches(
         self,
-        build: Dict,
-        rel_paths: Set[str],
+        local_paths: Set[str],
         regexp: str,
         before_context: Optional[int],
         after_context: Optional[int],
         context: Optional[int],
     ) -> List[str]:
-        local_paths = []
-        for rel_path in rel_paths:
-            local_paths.append(
-                self.cache.ensure_build_log_file(build, rel_path)
-            )
         # ripgrepy is very noisy on debug level and unfortunately using the
         # root logger
         with self._silence_log():

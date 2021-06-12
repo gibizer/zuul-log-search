@@ -48,6 +48,7 @@ class API:
         LOG.debug(f"Fetching {url}")
         i = 0
         with requests.get(url, stream=True) as r:
+            r.raise_for_status()
             with open(local_path, "wb") as f:
                 for chunk in r.iter_content(chunk_size=10 * 1024):
                     f.write(chunk)
