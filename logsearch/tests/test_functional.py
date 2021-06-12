@@ -5,9 +5,8 @@ from typing import Generator
 import unittest
 from unittest import mock
 
-import requests.exceptions
-
 from logsearch import main
+from logsearch import zuul
 
 
 @contextlib.contextmanager
@@ -107,21 +106,15 @@ class TestBuildList(unittest.TestCase):
             3,
         )
 
-    @unittest.skip("handle zuul errors")
     @mock.patch("logsearch.zuul.API.list_builds")
     def test_zuul_api_error(self, mock_zuul_list_builds):
-        rsp = requests.Response()
-        rsp.status_code = 404
-        mock_zuul_list_builds.side_effect = requests.exceptions.HTTPError(
-            response=rsp
-        )
+        mock_zuul_list_builds.side_effect = zuul.ZuulException()
 
         with collect_stdout() as stdout:
             main.main(args=["build"])
 
         output = stdout.getvalue()
-        self.assertIn("fake-uuid", output)
-        self.assertIn("fake-url/1", output)
+        self.assertIn("Cannot access Zuul", output)
         mock_zuul_list_builds.assert_called_once_with(
             "openstack", None, None, [], [], None, None, 10
         )

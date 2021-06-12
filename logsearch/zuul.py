@@ -7,6 +7,11 @@ import requests
 LOG = logging.getLogger(__name__)
 
 
+class ZuulException(BaseException):
+    def __init__(self):
+        super().__init__("Cannot access Zuul")
+
+
 class API:
     def __init__(self, zuul_url: str) -> None:
         self.zuul_url = zuul_url
@@ -36,11 +41,14 @@ class API:
         if limit is not None:
             params["limit"] = limit
 
-        r = requests.get(
-            self.zuul_url + f"/tenant/{tenant}/builds", params=params
-        )
-        r.raise_for_status()
-        return r.json()
+        try:
+            r = requests.get(
+                self.zuul_url + f"/tenant/{tenant}/builds", params=params
+            )
+            r.raise_for_status()
+            return r.json()
+        except requests.RequestException as e:
+            raise ZuulException() from e
 
     @staticmethod
     def fetch_log(build, log_file, local_path, progress_handler) -> None:

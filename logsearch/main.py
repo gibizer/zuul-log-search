@@ -208,7 +208,10 @@ def main(args=tuple(sys.argv[1:])) -> None:
         )
         handler = arg_handler.get_subcommand_handler(args)
         handler()
-    except handlers.CmdException as e:
+    except (
+        handlers.CmdException,
+        zuul.ZuulException,
+    ) as e:
         print(e)
         LOG.debug(traceback.format_exc())
 
