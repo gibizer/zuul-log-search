@@ -14,6 +14,7 @@ class TestBuildLogCache(unittest.TestCase):
     def test_ensure_build_log_file_needs_to_fetch(self):
         build = {"uuid": "fake_uuid", "log_url": "http://fake_log_url/"}
         fake_zuul = FakeZuul()
+        fake_zuul.add_log_content("fake_uuid", "log-file-path", "content")
         with tempfile.TemporaryDirectory() as cache_dir:
             cache = search.BuildLogCache(cache_dir, fake_zuul)
 
@@ -25,6 +26,7 @@ class TestBuildLogCache(unittest.TestCase):
     def test_ensure_build_log_already_cached(self):
         build = {"uuid": "fake_uuid", "log_url": "http://fake_log_url/"}
         fake_zuul = FakeZuul()
+        fake_zuul.add_log_content("fake_uuid", "log-file-path", "content")
         with tempfile.TemporaryDirectory() as cache_dir:
             cache = search.BuildLogCache(cache_dir, fake_zuul)
             # download it once
@@ -84,7 +86,10 @@ class TestSearch(unittest.TestCase):
             f"Expected:{expected_match_lines}\nActual:{lines}",
         )
         for expected, actual in zip(expected_match_lines, lines):
-            self.assertEqual(expected, actual)
+            if expected == "--":
+                self.assertEqual(expected, actual)
+            else:
+                self.assertEqual(f"{f.name}{expected}", actual)
 
     def test_no_match(self):
         self._test_search(
@@ -107,8 +112,8 @@ class TestSearch(unittest.TestCase):
             ],
             regex="b",
             expected_match_lines=[
-                "2:line2 b",
-                "4:line4 b",
+                ":2:line2 b",
+                ":4:line4 b",
             ],
         )
 
@@ -121,8 +126,8 @@ class TestSearch(unittest.TestCase):
             ],
             regex="b",
             expected_match_lines=[
-                "1-line1 a",
-                "2:line2 b",
+                "-1-line1 a",
+                ":2:line2 b",
             ],
             before_context=1,
         )
@@ -137,10 +142,10 @@ class TestSearch(unittest.TestCase):
             ],
             regex="b",
             expected_match_lines=[
-                "1-line1 a",
-                "2:line2 b",
-                "3-line3 c",
-                "4:line4 b",
+                "-1-line1 a",
+                ":2:line2 b",
+                "-3-line3 c",
+                ":4:line4 b",
             ],
             before_context=1,
         )
@@ -156,11 +161,11 @@ class TestSearch(unittest.TestCase):
             ],
             regex="b",
             expected_match_lines=[
-                "1-line1 a",
-                "2:line2 b",
+                "-1-line1 a",
+                ":2:line2 b",
                 "--",
-                "4-line4 c",
-                "5:line5 b",
+                "-4-line4 c",
+                ":5:line5 b",
             ],
             before_context=1,
         )

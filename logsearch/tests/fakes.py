@@ -1,6 +1,8 @@
 import collections
 from typing import List, Optional, Dict, Any
 
+import requests
+
 from logsearch import zuul
 
 
@@ -23,9 +25,12 @@ class FakeZuul(zuul.API):
         self.log_content[build_uuid][log_file_name] = content
 
     def fetch_log(self, build, log_file, local_path, progress_handler):
-        with open(local_path, "w") as f:
-            f.write(self.log_content[build["uuid"]][log_file])
         self.fetched_files.append(log_file)
+        with open(local_path, "w") as f:
+            if log_file in self.log_content[build["uuid"]]:
+                f.write(self.log_content[build["uuid"]][log_file])
+            else:
+                raise requests.HTTPError()
 
     def list_builds(
         self,

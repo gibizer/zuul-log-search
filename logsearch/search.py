@@ -97,6 +97,8 @@ class LogSearch:
                 rg.after_context(after_context)
             if context:
                 rg.context(context)
+            rg.no_heading()
+            rg.with_filename()
             result = rg.run()
             lines = result.as_string.splitlines()
         return lines

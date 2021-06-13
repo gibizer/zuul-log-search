@@ -164,9 +164,6 @@ class LogSearchCmd(Cmd):
             if lines:
                 matching_builds.append(build_uuid_to_build[build_uuid])
                 print()
-        print(
-            f"Builds with matching logs {len(matching_builds)}/{len(builds)}:"
-        )
         return matching_builds
 
     def _download_logs_for_builds(self, args, builds):
