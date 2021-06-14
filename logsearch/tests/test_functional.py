@@ -154,7 +154,7 @@ class TestBuildShow(TestBase):
             with collect_stdout() as stdout:
                 main.main(
                     args=[
-                        "--log_store_dir",
+                        "--log-store-dir",
                         cache_dir,
                         "build-show",
                         "fake-uuid",
@@ -198,7 +198,7 @@ class TestLogSearch(TestBase):
             with collect_stdout() as stdout:
                 main.main(
                     args=[
-                        "--log_store_dir",
+                        "--log-store-dir",
                         cache_dir,
                         "log",
                         "some-pattern",
@@ -231,7 +231,7 @@ class TestLogSearch(TestBase):
             with collect_stdout() as stdout:
                 main.main(
                     args=[
-                        "--log_store_dir",
+                        "--log-store-dir",
                         cache_dir,
                         "log",
                         "non-matching-pattern",
@@ -268,7 +268,7 @@ class TestLogSearch(TestBase):
             with collect_stdout() as stdout:
                 main.main(
                     args=[
-                        "--log_store_dir",
+                        "--log-store-dir",
                         cache_dir,
                         "log",
                         "--file",
@@ -305,7 +305,7 @@ class TestLogSearch(TestBase):
             with collect_stdout() as stdout:
                 main.main(
                     args=[
-                        "--log_store_dir",
+                        "--log-store-dir",
                         cache_dir,
                         "log",
                         "--file",
@@ -353,7 +353,7 @@ class TestLogSearch(TestBase):
             with collect_stdout() as stdout:
                 main.main(
                     args=[
-                        "--log_store_dir",
+                        "--log-store-dir",
                         cache_dir,
                         "log",
                         "--file",

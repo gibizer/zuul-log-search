@@ -35,10 +35,10 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --debug               Print debug logs
-  --zuul_api_url ZUUL_API_URL
+  --zuul-api-url ZUUL_API_URL
                         The API url of the Zuul deployment to use.
                         Defaulted to the OpenDev Zuul (https://zuul.opendev.org/api)
-  --log_store_dir LOG_STORE_DIR
+  --log-store-dir LOG_STORE_DIR
                         The local directory to download the logs to.
                         Defaulted to .logsearch
 ```

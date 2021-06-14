@@ -97,14 +97,14 @@ class ArgHandler:
             help="Print debug logs",
         )
         arg_parser.add_argument(
-            "--zuul_api_url",
+            "--zuul-api-url",
             type=str,
             default="https://zuul.opendev.org/api",
             help="The API url of the Zuul deployment to use. "
             "Defaulted to the OpenDev Zuul (https://zuul.opendev.org/api)",
         )
         arg_parser.add_argument(
-            "--log_store_dir",
+            "--log-store-dir",
             dest="log_store_dir",
             default=".logsearch/",
             help="The local directory to download the logs to. "
