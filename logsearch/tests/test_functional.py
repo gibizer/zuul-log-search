@@ -76,7 +76,7 @@ class TestBuildList(TestBase):
 
         output = stdout.getvalue()
         self.assertIn("fake-uuid", output)
-        self.assertIn("fake-url/1", output)
+        self.assertIn("fake-url", output)
         mock_zuul_list_builds.assert_called_once_with(
             "openstack", None, None, set(), [], None, None, 10
         )
@@ -90,9 +90,9 @@ class TestBuildList(TestBase):
 
         output = stdout.getvalue()
         self.assertIn("fake-uuid", output)
-        self.assertIn("fake-url/1", output)
+        self.assertIn("fake-url", output)
         self.assertIn("fake-uuid2", output)
-        self.assertIn("fake-url2/3", output)
+        self.assertIn("fake-url2", output)
         mock_zuul_list_builds.assert_called_once_with(
             "openstack", None, None, set(), [], None, None, 10
         )
@@ -127,7 +127,7 @@ class TestBuildList(TestBase):
 
         output = stdout.getvalue()
         self.assertIn("fake-uuid", output)
-        self.assertIn("fake-url/1", output)
+        self.assertIn("fake-url", output)
         mock_zuul_list_builds.assert_called_once_with(
             "openstack",
             "nova",
@@ -180,7 +180,7 @@ class TestBuildList(TestBase):
 
         output = stdout.getvalue()
         self.assertIn("fake-uuid", output)
-        self.assertIn("fake-url/1", output)
+        self.assertIn("fake-url", output)
         mock_zuul_list_builds.assert_called_once_with(
             "openstack",
             None,
@@ -214,7 +214,7 @@ class TestBuildShow(TestBase):
 
         output = stdout.getvalue()
         self.assertIn("fake-uuid", output)
-        self.assertIn("fake-url/1", output)
+        self.assertIn("fake-url", output)
 
     def test_not_cached(self):
         with collect_stdout() as stdout:
@@ -264,7 +264,7 @@ class TestLogSearch(TestBase):
             output,
             "fake-uuid:.*job-output.txt:4:another some-pattern instance",
         )
-        self.assertIn("fake-url/1", output)
+        self.assertIn("fake-url", output)
         self.assertIn("1/1", output)
 
     def test_one_build_default_file_no_match(self):
@@ -292,7 +292,7 @@ class TestLogSearch(TestBase):
         output = stdout.getvalue()
         self.assertNotIn("pattern", output)
         self.assertIn("fake-uuid", output)
-        self.assertIn("fake-url/1", output)
+        self.assertIn("fake-url", output)
         self.assertIn("0/1", output)
 
     def test_multi_build_multi_file(self):
@@ -341,8 +341,8 @@ class TestLogSearch(TestBase):
         self.assertNotRegex(output, r"fake-uuid:\w+other-file")
         self.assertNotRegex(output, r"fake-uuid2:\w+job-output.txt")
         self.assertRegex(output, "fake-uuid2:.*other-file:1:some-pattern")
-        self.assertIn("fake-url/1", output)
-        self.assertIn("fake-url2/3", output)
+        self.assertIn("fake-url", output)
+        self.assertIn("fake-url2", output)
         self.assertIn("2/2", output)
 
     def test_builds_no_log_url_and_file_missing(self):
@@ -428,5 +428,5 @@ class TestLogSearch(TestBase):
         self.assertIn("match4", output)
         self.assertIn("after context3", output)
         self.assertNotIn("do not emit", output)
-        self.assertIn("fake-url/1", output)
+        self.assertIn("fake-url", output)
         self.assertIn("1/1", output)
