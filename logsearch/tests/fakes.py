@@ -1,5 +1,5 @@
 import collections
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Set
 
 import requests
 
@@ -37,7 +37,7 @@ class FakeZuul(zuul.API):
         tenant,
         project: Optional[str],
         pipeline: Optional[str],
-        jobs: List[str],
+        jobs: Set[str],
         branches: List[str],
         result: Optional[str],
         voting: Optional[bool],

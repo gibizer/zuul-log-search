@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Set
 import os
 
 import requests
@@ -21,7 +21,7 @@ class API:
         tenant,
         project: Optional[str],
         pipeline: Optional[str],
-        jobs: List[str],
+        jobs: Set[str],
         branches: List[str],
         result: Optional[str],
         voting: Optional[bool],

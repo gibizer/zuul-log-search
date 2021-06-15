@@ -4,3 +4,5 @@
 .idea/*
 *.egg-info/*
 *.pyc
+.logsearch.conf.d/*
+!.logsearch.conf.d/conf_sample.conf

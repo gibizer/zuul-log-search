@@ -1,10 +1,12 @@
 import contextlib
 import io
+import os
 import sys
 import tempfile
-from typing import Generator
+from typing import Generator, Dict
 import unittest
 from unittest import mock
+import yaml
 
 from logsearch import main
 from logsearch import search
@@ -21,6 +23,15 @@ def collect_stdout() -> Generator[io.StringIO, None, None]:
         yield stdout
     finally:
         sys.stdout = orig_stdout
+
+
+@contextlib.contextmanager
+def test_config(config: Dict) -> Generator[str, None, None]:
+    with tempfile.TemporaryDirectory() as config_dir:
+        with open(os.path.join(config_dir, "my-test-config.conf"), "w") as f:
+            yaml.dump(config, f)
+
+        yield config_dir
 
 
 class TestBase(unittest.TestCase):
@@ -67,7 +78,7 @@ class TestBuildList(TestBase):
         self.assertIn("fake-uuid", output)
         self.assertIn("fake-url/1", output)
         mock_zuul_list_builds.assert_called_once_with(
-            "openstack", None, None, [], [], None, None, 10
+            "openstack", None, None, set(), [], None, None, 10
         )
 
     @mock.patch("logsearch.zuul.API.list_builds")
@@ -83,7 +94,7 @@ class TestBuildList(TestBase):
         self.assertIn("fake-uuid2", output)
         self.assertIn("fake-url2/3", output)
         mock_zuul_list_builds.assert_called_once_with(
-            "openstack", None, None, [], [], None, None, 10
+            "openstack", None, None, set(), [], None, None, 10
         )
 
     @mock.patch("logsearch.zuul.API.list_builds")
@@ -121,7 +132,7 @@ class TestBuildList(TestBase):
             "openstack",
             "nova",
             "gate",
-            ["nova-grenade-multinode", "nova-next"],
+            {"nova-grenade-multinode", "nova-next"},
             ["master", "stable/wallaby"],
             "FAILURE",
             True,
@@ -138,7 +149,47 @@ class TestBuildList(TestBase):
         output = stdout.getvalue()
         self.assertIn("Cannot access Zuul", output)
         mock_zuul_list_builds.assert_called_once_with(
-            "openstack", None, None, [], [], None, None, 10
+            "openstack", None, None, set(), [], None, None, 10
+        )
+
+    @mock.patch("logsearch.zuul.API.list_builds")
+    def test_with_job_groups(self, mock_zuul_list_builds):
+        mock_zuul_list_builds.return_value = [self.build1]
+        config = {
+            "job-groups": {
+                "a-group": ["job1", "job2"],
+                "b-group": ["job2", "job3"],
+                "c-group": ["job4"],
+            }
+        }
+        with test_config(config) as config_dir:
+            with collect_stdout() as stdout:
+                main.main(
+                    args=[
+                        "--config-dir",
+                        config_dir,
+                        "build",
+                        "--job",
+                        "extra-job",
+                        "--job-group",
+                        "a-group",
+                        "--job-group",
+                        "b-group",
+                    ]
+                )
+
+        output = stdout.getvalue()
+        self.assertIn("fake-uuid", output)
+        self.assertIn("fake-url/1", output)
+        mock_zuul_list_builds.assert_called_once_with(
+            "openstack",
+            None,
+            None,
+            {"job1", "job2", "job3", "extra-job"},
+            [],
+            None,
+            None,
+            10,
         )
 
 

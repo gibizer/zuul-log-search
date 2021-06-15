@@ -3,3 +3,4 @@ flake8
 mypy
 stestr
 types-requests
+types-PyYAML

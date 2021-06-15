@@ -47,6 +47,15 @@ class ArgHandler:
             "Can be repeated to express OR relationship.",
         )
         arg_parser.add_argument(
+            "--job-group",
+            dest="job_groups",
+            default=[],
+            action="append",
+            help="The name of a job group defined in the configuration. A the "
+            "jobs in the group will be use in the same way as if you "
+            "specified them one by one with --job. Can be repeated.",
+        )
+        arg_parser.add_argument(
             "--branch",
             dest="branches",
             default=[],
@@ -108,7 +117,14 @@ class ArgHandler:
             dest="log_store_dir",
             default=".logsearch/",
             help="The local directory to download the logs to. "
-            "Defaulted to .logsearch",
+            "Defaulted to .logsearch/",
+        )
+        arg_parser.add_argument(
+            "--config-dir",
+            dest="config_dir",
+            default=".logsearch.conf.d/",
+            help="The local directory storing config files and stored "
+            "queries. Defaulted to .logsearch.conf.d/",
         )
         # calling without subcommand prints the help
         arg_parser.set_defaults(func=lambda args: arg_parser.print_help())

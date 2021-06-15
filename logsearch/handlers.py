@@ -5,6 +5,7 @@ from typing import List, Dict, Any
 
 import prettytable  # type: ignore
 
+from logsearch import config
 from logsearch import search
 from logsearch import zuul
 
@@ -114,6 +115,8 @@ class Cmd:
         if args.debug:
             logging.basicConfig(level=logging.DEBUG)
 
+        self.config = config.Config(args)
+
 
 class BuildShowCmd(Cmd):
     def execute(self, args: argparse.Namespace) -> None:
@@ -129,11 +132,12 @@ class BuildShowCmd(Cmd):
 class BuildCmd(Cmd):
     def execute(self, args: argparse.Namespace) -> None:
         super().execute(args)
+        # TODO(gibi): move all the args access to Config
         builds = self.zuul_api.list_builds(
             args.tenant,
             args.project,
             args.pipeline,
-            args.jobs,
+            self.config.jobs,
             args.branches,
             args.result,
             args.voting,
@@ -184,11 +188,12 @@ class LogSearchCmd(Cmd):
         return build_uuid_to_build, build_uuid_to_files
 
     def _get_builds(self, args) -> List[Dict[str, Any]]:
+        # TODO(gibi): move all the args access to Config
         builds = self.zuul_api.list_builds(
             args.tenant,
             args.project,
             args.pipeline,
-            args.jobs,
+            self.config.jobs,
             args.branches,
             args.result,
             args.voting,
