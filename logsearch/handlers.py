@@ -119,8 +119,8 @@ class BuildShowCmd(Cmd):
         cache = search.BuildLogCache(args.log_store_dir, self.zuul_api)
         try:
             build = cache.get_build_metadata(args.uuid)
-        except FileNotFoundError as e:
-            raise CmdException(f"Build {args.uuid} is not cached.") from e
+        except FileNotFoundError:
+            build = self.zuul_api.get_build(args.tenant, args.uuid)
         print(BuildTable(build))
 
 

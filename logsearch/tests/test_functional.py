@@ -141,7 +141,9 @@ class TestBuildList(TestBase):
 
     @mock.patch("logsearch.zuul.API.list_builds")
     def test_zuul_api_error(self, mock_zuul_list_builds):
-        mock_zuul_list_builds.side_effect = zuul.ZuulException()
+        mock_zuul_list_builds.side_effect = zuul.ZuulException(
+            "Cannot access Zuul"
+        )
 
         with collect_stdout() as stdout:
             main.main(args=["build"])
@@ -216,12 +218,18 @@ class TestBuildShow(TestBase):
         self.assertIn("fake-uuid", output)
         self.assertIn("fake-url", output)
 
-    def test_not_cached(self):
+    @mock.patch("logsearch.zuul.API.get_build")
+    def test_not_cached(self, mock_get_build):
+
+        mock_get_build.return_value = self.build1
+
         with collect_stdout() as stdout:
             main.main(args=["build-show", "fake-uuid"])
 
         output = stdout.getvalue()
-        self.assertIn("Build fake-uuid is not cached", output)
+        self.assertIn("fake-uuid", output)
+        self.assertIn("fake-url", output)
+        mock_get_build.assert_called_once_with("openstack", "fake-uuid")
 
 
 class TestLogSearch(TestBase):

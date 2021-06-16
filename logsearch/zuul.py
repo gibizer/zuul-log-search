@@ -8,13 +8,30 @@ LOG = logging.getLogger(__name__)
 
 
 class ZuulException(BaseException):
-    def __init__(self):
-        super().__init__("Cannot access Zuul")
+    pass
 
 
 class API:
     def __init__(self, zuul_url: str) -> None:
         self.zuul_url = zuul_url
+
+    def get_build(self, tenant: str, build_uuid: str) -> Dict:
+        try:
+            r = requests.get(
+                self.zuul_url + f"/tenant/{tenant}/builds",
+                params={"uuid": build_uuid},
+            )
+            r.raise_for_status()
+            builds = r.json()
+            if len(builds) == 0:
+                raise ZuulException(f"Build {build_uuid} not found")
+            if len(builds) > 1:
+                raise ZuulException(
+                    f"More than one results for {build_uuid}: %s" % builds
+                )
+            return builds[0]
+        except requests.RequestException as e:
+            raise ZuulException("Cannot access Zuul") from e
 
     def list_builds(
         self,
@@ -48,7 +65,7 @@ class API:
             r.raise_for_status()
             return r.json()
         except requests.RequestException as e:
-            raise ZuulException() from e
+            raise ZuulException("Cannot access Zuul") from e
 
     @staticmethod
     def fetch_log(build, log_file, local_path, progress_handler) -> None:

@@ -22,13 +22,6 @@ class ArgHandler:
     @staticmethod
     def _add_build_filter_args(arg_parser: argparse.ArgumentParser) -> None:
         arg_parser.add_argument(
-            "--tenant",
-            type=str,
-            default="openstack",
-            help="The name of the tenant in the Zuul installation. "
-            "Defaulted to 'openstack'",
-        )
-        arg_parser.add_argument(
             "--project",
             type=str,
             help="The name of the project built",
@@ -126,6 +119,14 @@ class ArgHandler:
             help="The local directory storing config files and stored "
             "queries. Defaulted to .logsearch.conf.d/",
         )
+        arg_parser.add_argument(
+            "--tenant",
+            type=str,
+            default="openstack",
+            help="The name of the tenant in the Zuul installation. "
+            "Defaulted to 'openstack'",
+        )
+
         # calling without subcommand prints the help
         arg_parser.set_defaults(func=lambda args: arg_parser.print_help())
 
