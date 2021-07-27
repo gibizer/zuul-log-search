@@ -48,14 +48,14 @@ class BuildsTable:
         "job_name": "job",
     }
 
-    def __init__(self, builds: List[Dict], args: argparse.Namespace) -> None:
+    def __init__(self, builds: List[Dict], args: config.Config) -> None:
         self.builds = builds
         self.extra_fields = self._get_extra_field_names_from_requested_args(
             args
         )
 
     def _get_extra_field_names_from_requested_args(
-        self, args: argparse.Namespace
+        self, args: config.Config
     ) -> List[str]:
         """Calculate what build fields to show based on the requested args.
 
@@ -105,8 +105,11 @@ class CmdException(Exception):
 class Cmd:
     def __init__(self, zuul_api: zuul.API) -> None:
         self.zuul_api = zuul_api
+        self.config: config.Config
 
     def execute(self, args: argparse.Namespace) -> None:
+        # This is catch 22 if we want to get debug info from config parsing
+        # the we cannot use config object here
         if args.debug:
             logging.basicConfig(level=logging.DEBUG)
 
@@ -116,11 +119,13 @@ class Cmd:
 class BuildShowCmd(Cmd):
     def execute(self, args: argparse.Namespace) -> None:
         super().execute(args)
-        cache = search.BuildLogCache(args.log_store_dir, self.zuul_api)
+        cache = search.BuildLogCache(self.config.log_store_dir, self.zuul_api)
         try:
-            build = cache.get_build_metadata(args.uuid)
+            build = cache.get_build_metadata(self.config.uuid)
         except FileNotFoundError:
-            build = self.zuul_api.get_build(args.tenant, args.uuid)
+            build = self.zuul_api.get_build(
+                self.config.tenant, self.config.uuid
+            )
         print(BuildTable(build))
 
 
@@ -129,16 +134,16 @@ class BuildCmd(Cmd):
         super().execute(args)
         # TODO(gibi): move all the args access to Config
         builds = self.zuul_api.list_builds(
-            args.tenant,
-            args.project,
-            args.pipeline,
+            self.config.tenant,
+            self.config.project,
+            self.config.pipeline,
             self.config.jobs,
-            args.branches,
-            args.result,
-            args.voting,
-            args.limit,
+            self.config.branches,
+            self.config.result,
+            self.config.voting,
+            self.config.limit,
         )
-        print(BuildsTable(builds, args))
+        print(BuildsTable(builds, self.config))
 
 
 class LogSearchCmd(Cmd):
@@ -153,10 +158,10 @@ class LogSearchCmd(Cmd):
         for build_uuid in build_uuid_to_files.keys():
             lines = self.ls.get_matches(
                 build_uuid_to_files[build_uuid],
-                args.regex,
-                args.before_context,
-                args.after_context,
-                args.context,
+                self.config.regex,
+                self.config.before_context,
+                self.config.after_context,
+                self.config.context,
             )
             for line in lines:
                 print(f"{build_uuid}:{line}")
@@ -166,7 +171,7 @@ class LogSearchCmd(Cmd):
         return matching_builds
 
     def _download_logs_for_builds(self, args, builds):
-        cache = search.BuildLogCache(args.log_store_dir, self.zuul_api)
+        cache = search.BuildLogCache(self.config.log_store_dir, self.zuul_api)
         build_uuid_to_build = {build["uuid"]: build for build in builds}
         build_uuid_to_files = collections.defaultdict(set)
         for build in builds:
@@ -174,7 +179,7 @@ class LogSearchCmd(Cmd):
                 print(f"{build['uuid']}: empty log URL. Skipping.")
                 continue
 
-            for file in args.files:
+            for file in self.config.files:
                 # if the download fails the the result is None, skip searching
                 # those files
                 local_path = cache.ensure_build_log_file(build, file)
@@ -185,28 +190,23 @@ class LogSearchCmd(Cmd):
     def _get_builds(self, args) -> List[Dict[str, Any]]:
         # TODO(gibi): move all the args access to Config
         builds = self.zuul_api.list_builds(
-            args.tenant,
-            args.project,
-            args.pipeline,
+            self.config.tenant,
+            self.config.project,
+            self.config.pipeline,
             self.config.jobs,
-            args.branches,
-            args.result,
-            args.voting,
-            args.limit,
+            self.config.branches,
+            self.config.result,
+            self.config.voting,
+            self.config.limit,
         )
         return builds
 
     def execute(self, args: argparse.Namespace) -> None:
         super().execute(args)
-        # ensure that file list has unique elements
-        args.files = set(args.files)
-        # if not provided default it
-        if not args.files:
-            args.files = {"job-output.txt"}
 
         builds = self._get_builds(args)
         print("Found builds:")
-        print(BuildsTable(builds, args))
+        print(BuildsTable(builds, self.config))
 
         print("Downloading logs:")
         (
@@ -221,4 +221,4 @@ class LogSearchCmd(Cmd):
         print(
             f"Builds with matching logs {len(matching_builds)}/{len(builds)}:"
         )
-        print(BuildsTable(matching_builds, args))
+        print(BuildsTable(matching_builds, self.config))

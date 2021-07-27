@@ -1,7 +1,7 @@
 import argparse
 import logging
 import os
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Optional
 import yaml
 
 
@@ -44,15 +44,16 @@ class Config:
     args and the configuration files"""
 
     def __init__(self, args: argparse.Namespace) -> None:
-        self._config = PersistentConfig(args.config_dir)
+        self._args: argparse.Namespace = args
+        self._config = PersistentConfig(self._args.config_dir)
         self._jobs: set[str] = set()
-        self._init_from_args(args)
+        self._init_from_args()
 
-    def _init_from_args(self, args: argparse.Namespace) -> None:
+    def _init_from_args(self) -> None:
         # calculate jobs from command line and expand requested job groups
-        if "jobs" in args:
-            self._jobs = set(args.jobs)
-            for job_group in args.job_groups:
+        if "jobs" in self._args:
+            self._jobs = set(self._args.jobs)
+            for job_group in self._args.job_groups:
                 if job_group not in self._config.job_groups:
                     raise ConfigError(
                         f"The requested job group {job_group} is not defined "
@@ -62,6 +63,69 @@ class Config:
                 # simply expand the groups to individual jobs
                 self._jobs.update(self._config.job_groups[job_group])
 
+        if "files" in self._args:
+            # ensure that file list has unique elements
+            self._args.files = set(self._args.files)
+            # if not provided default it
+            if not self._args.files:
+                self._args.files = {"job-output.txt"}
+
     @property
     def jobs(self) -> Set[str]:
         return self._jobs
+
+    @property
+    def tenant(self) -> str:
+        return self._args.tenant
+
+    @property
+    def project(self) -> Optional[str]:
+        return self._args.project
+
+    @property
+    def pipeline(self) -> Optional[str]:
+        return self._args.pipeline
+
+    @property
+    def branches(self) -> List[str]:
+        return self._args.branches
+
+    @property
+    def result(self) -> Optional[str]:
+        return self._args.result
+
+    @property
+    def voting(self) -> Optional[bool]:
+        return self._args.voting
+
+    @property
+    def limit(self) -> int:
+        return self._args.limit
+
+    @property
+    def regex(self) -> str:
+        return self._args.regex
+
+    @property
+    def before_context(self) -> int:
+        return self._args.before_context
+
+    @property
+    def after_context(self) -> int:
+        return self._args.after_context
+
+    @property
+    def context(self) -> int:
+        return self._args.context
+
+    @property
+    def log_store_dir(self) -> str:
+        return self._args.log_store_dir
+
+    @property
+    def files(self) -> Set[str]:
+        return self._args.files
+
+    @property
+    def uuid(self) -> str:
+        return self._args.uuid
