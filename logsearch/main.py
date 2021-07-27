@@ -44,7 +44,7 @@ class ArgHandler:
             dest="job_groups",
             default=[],
             action="append",
-            help="The name of a job group defined in the configuration. A the "
+            help="The name of a job group defined in the configuration. The "
             "jobs in the group will be use in the same way as if you "
             "specified them one by one with --job. Can be repeated.",
         )
