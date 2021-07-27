@@ -4,14 +4,14 @@ Install
 =======
 
 This tool depends on [``ripgrep``](https://github.com/BurntSushi/ripgrep) a 
-fast and efficient ``grep`` clone written in Rust. So you have to first 
+fast and efficient ``grep`` clone written in Rust. So you have to first install
 ``ripgrep``:
 
 ```shell
 $ sudo apt install ripgrep
 ```
 
-Then you can install zool-log-serach:
+Then you can install zuul-log-search:
 
 ```shell
 $ pip install git+http://github.com/gibizer/zuul-log-search  
@@ -27,10 +27,16 @@ $ logseach --help
 usage: Search Zuul CI results
 
 positional arguments:
-  {build-show,build,log}
+  {build-show,build,log,storedsearch}
     build-show          Show the metadata of a specific build
     build               Search for builds
     log                 Search the logs of the builds
+    storedsearch        Run a search defined in the configuration.
+                        The command line args can be used to fine tune the
+                        stored search where the configuration does not specify
+                        a given parameter. If a parameter is specified by the
+                        stored search then the corresponding command line
+                        parameter will be ignored.
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -40,7 +46,11 @@ optional arguments:
                         Defaulted to the OpenDev Zuul (https://zuul.opendev.org/api)
   --log-store-dir LOG_STORE_DIR
                         The local directory to download the logs to.
-                        Defaulted to .logsearch
+                        Defaulted to .logsearch/
+  --config-dir CONFIG_DIR
+                        The local directory storing config files and stored queries. Defaulted to .logsearch.conf.d/
+  --tenant TENANT       The name of the tenant in the Zuul installation.
+                        Defaulted to 'openstack'
 ```
 
 Searching for builds
@@ -112,3 +122,31 @@ Searching logs:
 Note that this command download the logfile to the local cache directory so 
 this might take a while. However, repeated searches in the same logs will use
 the local cache.
+
+Configuration
+=============
+The ``logsearch.conf.d`` directory is searched for config files. The directory
+location can be also provided via ``--config-dir`` command line parameter.
+Every file is read from the directory as yaml data and the configurations are
+merged. So you can separate out different part of the configuration to
+different files.
+
+Job groups
+----------
+Instead of listing multiple ``--job`` parameters in the command line you can
+define job groups in the configuration assigning an alias for a list of jobs
+and then you can use the ``--job-group`` parameter to refer to the list of job
+with the alias. See [example](.logsearch.conf.d/conf_sample.conf).
+
+Stored searches
+---------------
+If you have searches that you want to run regularly you can define it in the
+configuration file with an alias and then use the ``storedsearch`` command in
+the command line to invoke the stored query.  See
+[example](.logsearch.conf.d/conf_sample.conf).
+
+When running stored searches you can fine tune the query with same CLI
+parameters than in normal logsearch. But note that only those parameters can
+provided via the CLI that is not defined in the stored search. If a parameter
+provided via the CLI that is also defined in the config, the CLI value will be
+ignored.

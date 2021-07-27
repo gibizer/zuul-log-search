@@ -438,3 +438,167 @@ class TestLogSearch(TestBase):
         self.assertNotIn("do not emit", output)
         self.assertIn("fake-url", output)
         self.assertIn("1/1", output)
+
+    def test_stored_search_cli_defaults_applied(self):
+        self.fake_zuul.set_builds([self.build1])
+        self.fake_zuul.add_log_content(
+            self.build1["uuid"],
+            "job-output.txt",
+            "foo\n"
+            "... some-pattern and bar\n"
+            "baz\n"
+            "another some-pattern instance\n",
+        )
+        config = {
+            "searches": {
+                "my-search1": {
+                    "regex": "some-pattern",
+                }
+            }
+        }
+        with test_config(config) as config_dir:
+            with tempfile.TemporaryDirectory() as cache_dir:
+                with collect_stdout() as stdout:
+                    main.main(
+                        args=[
+                            "--config-dir",
+                            config_dir,
+                            "--log-store-dir",
+                            cache_dir,
+                            "storedsearch",
+                            "my-search1",
+                        ]
+                    )
+
+        output = stdout.getvalue()
+        # job-output.txt is defaulted
+        self.assertRegex(
+            output, "fake-uuid:.*job-output.txt:2:... some-pattern and bar"
+        )
+        self.assertRegex(
+            output,
+            "fake-uuid:.*job-output.txt:4:another some-pattern instance",
+        )
+        self.assertIn("fake-url", output)
+        self.assertIn("1/1", output)
+        self.assertEqual(1, len(self.fake_zuul.list_build_calls))
+        # tenant and limit are defaulted
+        self.assertEqual(
+            ("openstack", None, None, set(), [], None, None, 10),
+            self.fake_zuul.list_build_calls[0],
+        )
+
+    def test_stored_search_cli_defaults_overridden_via_config(self):
+        self.fake_zuul.set_builds([self.build1])
+        self.fake_zuul.add_log_content(
+            self.build1["uuid"],
+            "job-output2.txt",
+            "foo\n"
+            "... some-pattern and bar\n"
+            "baz\n"
+            "another some-pattern instance\n",
+        )
+        config = {
+            "searches": {
+                "my-search1": {
+                    "tenant": "my-tenant",
+                    "project": "my-project",
+                    "files": ["job-output2.txt"],
+                    "voting": True,
+                    "limit": 11,
+                    "regex": "some-pattern",
+                }
+            }
+        }
+        with test_config(config) as config_dir:
+            with tempfile.TemporaryDirectory() as cache_dir:
+                with collect_stdout() as stdout:
+                    main.main(
+                        args=[
+                            "--config-dir",
+                            config_dir,
+                            "--log-store-dir",
+                            cache_dir,
+                            "storedsearch",
+                            "my-search1",
+                        ]
+                    )
+
+        output = stdout.getvalue()
+        self.assertRegex(
+            output, "fake-uuid:.*job-output2.txt:2:... some-pattern and bar"
+        )
+        self.assertRegex(
+            output,
+            "fake-uuid:.*job-output2.txt:4:another some-pattern instance",
+        )
+        self.assertIn("fake-url", output)
+        self.assertIn("1/1", output)
+        self.assertEqual(
+            ("my-tenant", "my-project", None, set(), [], None, True, 11),
+            self.fake_zuul.list_build_calls[0],
+        )
+
+    def test_stored_search_undefined_config_value_defined_in_cli(self):
+        self.fake_zuul.set_builds([self.build1])
+        self.fake_zuul.add_log_content(
+            self.build1["uuid"],
+            "job-output2.txt",
+            "foo\n"
+            "... some-pattern and bar\n"
+            "baz\n"
+            "another some-pattern instance\n",
+        )
+        config = {
+            "searches": {
+                "my-search1": {
+                    "project": "my-project",
+                    "files": ["job-output2.txt"],
+                    "result": "FAILURE",
+                    "regex": "some-pattern",
+                }
+            }
+        }
+        with test_config(config) as config_dir:
+            with tempfile.TemporaryDirectory() as cache_dir:
+                with collect_stdout() as stdout:
+                    main.main(
+                        args=[
+                            "--config-dir",
+                            config_dir,
+                            "--log-store-dir",
+                            cache_dir,
+                            "storedsearch",
+                            # not defined in the config so it can be define
+                            # in the invocation
+                            "--limit",
+                            "13",
+                            # defined in the config so it is ignored if
+                            # provided at the invocation
+                            "--project",
+                            "other-project",
+                            # ditto ignored
+                            "--file",
+                            "other-file",
+                            "my-search1",
+                        ]
+                    )
+
+        output = stdout.getvalue()
+        self.assertRegex(
+            output, "fake-uuid:.*job-output2.txt:2:... some-pattern and bar"
+        )
+        self.assertRegex(
+            output,
+            "fake-uuid:.*job-output2.txt:4:another some-pattern instance",
+        )
+        self.assertIn("fake-url", output)
+        self.assertIn("1/1", output)
+        # other-file is not tried to be accessed
+        self.assertNotIn("Download failed:", output)
+        # result and limit is overridden via cli, tenant is defaulted, project
+        # from cli is ignored
+        self.assertEqual(
+            ("openstack", "my-project", None, set(), [], "FAILURE", None, 13),
+            self.fake_zuul.list_build_calls[0],
+        )

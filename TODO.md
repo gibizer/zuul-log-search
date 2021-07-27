@@ -2,8 +2,6 @@
 - [ ] Add test coverage
 - [ ] Run test in Travis CI
 - [ ] Config file to provider default search config
-- [ ] Config file to store named searches, and the ability to re-run the search
-  by name. Similarly, how elastic re-check signature works.
 - [ ] Support multi line regex
 - [ ] Make the output format of the log subcommand configurable. E.g. full,
   only-matched-lines
@@ -21,3 +19,5 @@ Done:
 - [x] Re-print filtered build table based on grep results
 - [x] Config file to define job categories (e.g. devstack based jobs) that can
   be used in --job search
+- [x] Config file to store named searches, and the ability to re-run the search
+  by name. Similarly, how elastic re-check signature works.

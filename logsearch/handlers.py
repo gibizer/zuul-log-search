@@ -107,18 +107,21 @@ class Cmd:
         self.zuul_api = zuul_api
         self.config: config.Config
 
-    def execute(self, args: argparse.Namespace) -> None:
+    def configure(self, args: argparse.Namespace) -> "Cmd":
         # This is catch 22 if we want to get debug info from config parsing
         # the we cannot use config object here
         if args.debug:
             logging.basicConfig(level=logging.DEBUG)
 
         self.config = config.Config(args)
+        return self
+
+    def execute(self) -> None:
+        raise NotImplementedError()
 
 
 class BuildShowCmd(Cmd):
-    def execute(self, args: argparse.Namespace) -> None:
-        super().execute(args)
+    def execute(self) -> None:
         cache = search.BuildLogCache(self.config.log_store_dir, self.zuul_api)
         try:
             build = cache.get_build_metadata(self.config.uuid)
@@ -130,8 +133,7 @@ class BuildShowCmd(Cmd):
 
 
 class BuildCmd(Cmd):
-    def execute(self, args: argparse.Namespace) -> None:
-        super().execute(args)
+    def execute(self) -> None:
         # TODO(gibi): move all the args access to Config
         builds = self.zuul_api.list_builds(
             self.config.tenant,
@@ -151,9 +153,7 @@ class LogSearchCmd(Cmd):
         super().__init__(zuul_api)
         self.ls = search.LogSearch()
 
-    def _search_logs(
-        self, args, build_uuid_to_build, build_uuid_to_files, builds
-    ):
+    def _search_logs(self, build_uuid_to_build, build_uuid_to_files, builds):
         matching_builds = []
         for build_uuid in build_uuid_to_files.keys():
             lines = self.ls.get_matches(
@@ -170,7 +170,7 @@ class LogSearchCmd(Cmd):
                 print()
         return matching_builds
 
-    def _download_logs_for_builds(self, args, builds):
+    def _download_logs_for_builds(self, builds):
         cache = search.BuildLogCache(self.config.log_store_dir, self.zuul_api)
         build_uuid_to_build = {build["uuid"]: build for build in builds}
         build_uuid_to_files = collections.defaultdict(set)
@@ -187,7 +187,7 @@ class LogSearchCmd(Cmd):
                     build_uuid_to_files[build["uuid"]].add(local_path)
         return build_uuid_to_build, build_uuid_to_files
 
-    def _get_builds(self, args) -> List[Dict[str, Any]]:
+    def _get_builds(self) -> List[Dict[str, Any]]:
         # TODO(gibi): move all the args access to Config
         builds = self.zuul_api.list_builds(
             self.config.tenant,
@@ -201,10 +201,8 @@ class LogSearchCmd(Cmd):
         )
         return builds
 
-    def execute(self, args: argparse.Namespace) -> None:
-        super().execute(args)
-
-        builds = self._get_builds(args)
+    def execute(self) -> None:
+        builds = self._get_builds()
         print("Found builds:")
         print(BuildsTable(builds, self.config))
 
@@ -212,13 +210,34 @@ class LogSearchCmd(Cmd):
         (
             build_uuid_to_build,
             build_uuid_to_files,
-        ) = self._download_logs_for_builds(args, builds)
+        ) = self._download_logs_for_builds(builds)
 
         print("Searching logs:")
         matching_builds = self._search_logs(
-            args, build_uuid_to_build, build_uuid_to_files, builds
+            build_uuid_to_build, build_uuid_to_files, builds
         )
         print(
             f"Builds with matching logs {len(matching_builds)}/{len(builds)}:"
         )
         print(BuildsTable(matching_builds, self.config))
+
+
+# NOTE(gibi): A stored search is just a logsearch with different
+# source of config. The Config object internally handles the
+# loading transparently. So the same search logic can be applied.
+class StoredSearchCmd(LogSearchCmd):
+    def __init__(self, zuul_api: zuul.API) -> None:
+        super().__init__(zuul_api)
+
+    def configure(self, args: argparse.Namespace) -> "StoredSearchCmd":
+        super().configure(args)
+        print("Running stored search:")
+        print(
+            "\n".join(
+                [
+                    "  " + line
+                    for line in self.config.stored_search_data_yaml.split("\n")
+                ]
+            )
+        )
+        return self

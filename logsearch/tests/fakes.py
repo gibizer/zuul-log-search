@@ -14,6 +14,7 @@ class FakeZuul(zuul.API):
             lambda: collections.defaultdict(str)
         )
         self.fetched_files: List[str] = []
+        self.list_build_calls: List[tuple] = []
 
     def add_build(self, build):
         self.builds.append(build)
@@ -43,4 +44,7 @@ class FakeZuul(zuul.API):
         voting: Optional[bool],
         limit: Optional[int],
     ) -> List[Dict]:
+        self.list_build_calls.append(
+            (tenant, project, pipeline, jobs, branches, result, voting, limit)
+        )
         return self.builds

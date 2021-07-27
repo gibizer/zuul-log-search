@@ -1,5 +1,6 @@
 import argparse
 import logging
+import io
 import os
 from typing import Dict, List, Set, Optional
 import yaml
@@ -17,6 +18,7 @@ class PersistentConfig:
 
     def __init__(self, config_dir):
         self._job_groups: Dict[str, List[str]] = {}
+        self._searches: Dict[str, Dict] = {}
         self._init_from_dir(config_dir)
 
     def _init_from_dir(self, config_dir):
@@ -33,10 +35,15 @@ class PersistentConfig:
         # if there is a key conflict between multiple files then we simply
         # overwrite
         self._job_groups.update(config_dict.get("job-groups", {}))
+        self._searches.update(config_dict.get("searches", {}))
 
     @property
     def job_groups(self) -> Dict[str, List[str]]:
         return self._job_groups
+
+    @property
+    def searches(self) -> Dict[str, Dict]:
+        return self._searches
 
 
 class Config:
@@ -47,6 +54,7 @@ class Config:
         self._args: argparse.Namespace = args
         self._config = PersistentConfig(self._args.config_dir)
         self._jobs: set[str] = set()
+        self._persistent_search_config: Optional[dict] = None
         self._init_from_args()
 
     def _init_from_args(self) -> None:
@@ -70,52 +78,109 @@ class Config:
             if not self._args.files:
                 self._args.files = {"job-output.txt"}
 
+        # A persistent search is requested so we need to load the search
+        # config from there.
+        if "search" in self._args:
+            # This will overwrite config stored in _args
+            self._apply_persistent_search_config(self._args.search)
+
+    def _apply_persistent_search_config(self, name):
+        search = self._config.searches.get(name)
+        if not search:
+            raise ConfigError(
+                f"The stored search {name} not found in the configuration. "
+                f"Available searches {list(self._config.searches.keys())}."
+            )
+        self._persistent_search_config = search
+
+    def _get_persistent_search_config(self, name):
+        if not self._persistent_search_config:
+            return None
+        return self._persistent_search_config.get(name)
+
     @property
     def jobs(self) -> Set[str]:
+        p_config = self._get_persistent_search_config("jobs")
+        if p_config:
+            # TODO(gibi): expand groups, needs a refactor of expanding to work
+            return p_config
         return self._jobs
 
     @property
     def tenant(self) -> str:
+        p_config = self._get_persistent_search_config("tenant")
+        if p_config:
+            return p_config
         return self._args.tenant
 
     @property
     def project(self) -> Optional[str]:
+        p_config = self._get_persistent_search_config("project")
+        if p_config:
+            return p_config
         return self._args.project
 
     @property
     def pipeline(self) -> Optional[str]:
+        p_config = self._get_persistent_search_config("pipeline")
+        if p_config:
+            return p_config
         return self._args.pipeline
 
     @property
     def branches(self) -> List[str]:
+        p_config = self._get_persistent_search_config("branches")
+        if p_config:
+            return p_config
         return self._args.branches
 
     @property
     def result(self) -> Optional[str]:
+        p_config = self._get_persistent_search_config("result")
+        if p_config:
+            return p_config
         return self._args.result
 
     @property
     def voting(self) -> Optional[bool]:
+        p_config = self._get_persistent_search_config("voting")
+        if p_config:
+            return p_config
         return self._args.voting
 
     @property
     def limit(self) -> int:
+        p_config = self._get_persistent_search_config("limit")
+        if p_config:
+            return p_config
         return self._args.limit
 
     @property
     def regex(self) -> str:
+        p_config = self._get_persistent_search_config("regex")
+        if p_config:
+            return p_config
         return self._args.regex
 
     @property
     def before_context(self) -> int:
+        p_config = self._get_persistent_search_config("before-context")
+        if p_config:
+            return p_config
         return self._args.before_context
 
     @property
     def after_context(self) -> int:
+        p_config = self._get_persistent_search_config("after-context")
+        if p_config:
+            return p_config
         return self._args.after_context
 
     @property
     def context(self) -> int:
+        p_config = self._get_persistent_search_config("context")
+        if p_config:
+            return p_config
         return self._args.context
 
     @property
@@ -124,8 +189,20 @@ class Config:
 
     @property
     def files(self) -> Set[str]:
+        p_config = self._get_persistent_search_config("files")
+        if p_config:
+            return p_config
         return self._args.files
 
     @property
     def uuid(self) -> str:
         return self._args.uuid
+
+    @property
+    def stored_search_data_yaml(self) -> str:
+        config_yaml_stream = io.StringIO()
+        yaml.dump(
+            {self._args.search: self._persistent_search_config},
+            config_yaml_stream,
+        )
+        return config_yaml_stream.getvalue()

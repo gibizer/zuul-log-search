@@ -13,11 +13,16 @@ LOG = logging.getLogger("__main__")
 
 class ArgHandler:
     def __init__(
-        self, build_handler, build_show_handler, logsearch_handler
+        self,
+        build_handler,
+        build_show_handler,
+        logsearch_handler,
+        stored_search_handler,
     ) -> None:
         self.build_handler = build_handler
         self.build_show_handler = build_show_handler
         self.logsearch_handler = logsearch_handler
+        self.stored_search_handler = stored_search_handler
 
     @staticmethod
     def _add_build_filter_args(arg_parser: argparse.ArgumentParser) -> None:
@@ -89,6 +94,35 @@ class ArgHandler:
             help="Number of builds returned. Defaulted to 10",
         )
 
+    def _add_logsearch_filter_args(
+        self, argparser: argparse.ArgumentParser
+    ) -> None:
+        argparser.add_argument(
+            "--file",
+            dest="files",
+            default=[],
+            action="append",
+            help="A relative filepath within the build directory to search "
+            "in. Can be repeated. Defaulted to job-output.txt",
+        )
+        argparser.add_argument(
+            "-B",
+            "--before-context",
+            help="Print number of lines of leading context before matching"
+            "lines",
+        )
+        argparser.add_argument(
+            "-A",
+            "--after-context",
+            help="Print number of lines of trailing context after matching"
+            "lines",
+        )
+        argparser.add_argument(
+            "-C",
+            "--context",
+            help="Print number of context lines",
+        )
+
     def _parse_args(self, sys_args) -> argparse.Namespace:
         arg_parser = argparse.ArgumentParser(usage="Search Zuul CI results")
         arg_parser.add_argument(
@@ -144,7 +178,9 @@ class ArgHandler:
         build_show_parser.set_defaults(
             func=lambda args: self.build_show_handler(
                 zuul.API(args.zuul_api_url)
-            ).execute(args)
+            )
+            .configure(args)
+            .execute()
         )
 
         build_parser = subparsers.add_parser(
@@ -153,9 +189,9 @@ class ArgHandler:
         )
         self._add_build_filter_args(build_parser)
         build_parser.set_defaults(
-            func=lambda args: self.build_handler(
-                zuul.API(args.zuul_api_url)
-            ).execute(args)
+            func=lambda args: self.build_handler(zuul.API(args.zuul_api_url))
+            .configure(args)
+            .execute()
         )
 
         log_parser = subparsers.add_parser(
@@ -163,31 +199,7 @@ class ArgHandler:
             help="Search the logs of the builds",
         )
         self._add_build_filter_args(log_parser)
-        log_parser.add_argument(
-            "--file",
-            dest="files",
-            default=[],
-            action="append",
-            help="A relative filepath within the build directory to search "
-            "in. Can be repeated. Defaulted to job-output.txt",
-        )
-        log_parser.add_argument(
-            "-B",
-            "--before-context",
-            help="Print number of lines of leading context before matching"
-            "lines",
-        )
-        log_parser.add_argument(
-            "-A",
-            "--after-context",
-            help="Print number of lines of trailing context after matching"
-            "lines",
-        )
-        log_parser.add_argument(
-            "-C",
-            "--context",
-            help="Print number of context lines",
-        )
+        self._add_logsearch_filter_args(log_parser)
 
         def regex(value):
             try:
@@ -206,7 +218,32 @@ class ArgHandler:
         log_parser.set_defaults(
             func=lambda args: self.logsearch_handler(
                 zuul.API(args.zuul_api_url)
-            ).execute(args)
+            )
+            .configure(args)
+            .execute()
+        )
+
+        stored_search_parser = subparsers.add_parser(
+            "storedsearch",
+            help="Run a search defined in the configuration.\n\n"
+            "The command line args can be used to fine tune the stored search "
+            "where the configuration does not specify a given parameter. If a "
+            "parameter is specified by the stored search then the "
+            "corresponding command line parameter will be ignored.",
+        )
+        self._add_build_filter_args(stored_search_parser)
+        self._add_logsearch_filter_args(stored_search_parser)
+        stored_search_parser.add_argument(
+            "search",
+            help="The name of the predefined search in the configuration",
+            type=str,
+        )
+        stored_search_parser.set_defaults(
+            func=lambda args: self.stored_search_handler(
+                zuul.API(args.zuul_api_url)
+            )
+            .configure(args)
+            .execute()
         )
 
         return arg_parser.parse_args(args=sys_args)
@@ -222,6 +259,7 @@ def main(args=tuple(sys.argv[1:])) -> None:
             build_handler=handlers.BuildCmd,
             build_show_handler=handlers.BuildShowCmd,
             logsearch_handler=handlers.LogSearchCmd,
+            stored_search_handler=handlers.StoredSearchCmd,
         )
         handler = arg_handler.get_subcommand_handler(args)
         handler()
