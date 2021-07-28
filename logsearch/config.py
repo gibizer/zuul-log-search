@@ -57,19 +57,27 @@ class Config:
         self._persistent_search_config: Optional[dict] = None
         self._init_from_args()
 
+    def _expand_job_groups(self, requested_groups):
+        jobs = set()
+        for job_group in requested_groups:
+            if job_group not in self._config.job_groups:
+                raise ConfigError(
+                    f"The requested job group {job_group} is not defined "
+                    f"in the config files."
+                )
+
+            # simply expand the groups to individual jobs
+            jobs.update(self._config.job_groups[job_group])
+        return jobs
+
     def _init_from_args(self) -> None:
         # calculate jobs from command line and expand requested job groups
         if "jobs" in self._args:
             self._jobs = set(self._args.jobs)
-            for job_group in self._args.job_groups:
-                if job_group not in self._config.job_groups:
-                    raise ConfigError(
-                        f"The requested job group {job_group} is not defined "
-                        f"in the config files."
-                    )
 
-                # simply expand the groups to individual jobs
-                self._jobs.update(self._config.job_groups[job_group])
+        if "job_groups" in self._args:
+            expanded_jobs = self._expand_job_groups(self._args.job_groups)
+            self._jobs.update(expanded_jobs)
 
         if "files" in self._args:
             # ensure that file list has unique elements
@@ -100,10 +108,12 @@ class Config:
 
     @property
     def jobs(self) -> Set[str]:
-        p_config = self._get_persistent_search_config("jobs")
-        if p_config:
-            # TODO(gibi): expand groups, needs a refactor of expanding to work
-            return p_config
+        p_jobs = self._get_persistent_search_config("jobs") or set()
+        p_job_groups = self._get_persistent_search_config("job-groups")
+        if p_jobs or p_job_groups:
+            p_jobs.update(self._expand_job_groups(p_job_groups))
+            return p_jobs
+
         return self._jobs
 
     @property

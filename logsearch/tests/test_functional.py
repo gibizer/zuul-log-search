@@ -553,6 +553,9 @@ class TestLogSearch(TestBase):
             "another some-pattern instance\n",
         )
         config = {
+            "job-groups": {
+                "group1": ["job1", "job2"],
+            },
             "searches": {
                 "my-search1": {
                     "tenant": "my-tenant",
@@ -560,9 +563,10 @@ class TestLogSearch(TestBase):
                     "files": ["job-output2.txt"],
                     "voting": True,
                     "limit": 11,
+                    "job-groups": ["group1"],
                     "regex": "some-pattern",
                 }
-            }
+            },
         }
         with test_config(config) as config_dir:
             with tempfile.TemporaryDirectory() as cache_dir:
@@ -589,7 +593,16 @@ class TestLogSearch(TestBase):
         self.assertIn("fake-url", output)
         self.assertIn("1/1", output)
         self.assertEqual(
-            ("my-tenant", "my-project", None, set(), [], None, True, 11),
+            (
+                "my-tenant",
+                "my-project",
+                None,
+                {"job1", "job2"},
+                [],
+                None,
+                True,
+                11,
+            ),
             self.fake_zuul.list_build_calls[0],
         )
 
@@ -604,6 +617,9 @@ class TestLogSearch(TestBase):
             "another some-pattern instance\n",
         )
         config = {
+            "job-groups": {
+                "group1": ["job1", "job2"],
+            },
             "searches": {
                 "my-search1": {
                     "project": "my-project",
@@ -611,7 +627,7 @@ class TestLogSearch(TestBase):
                     "result": "FAILURE",
                     "regex": "some-pattern",
                 }
-            }
+            },
         }
         with test_config(config) as config_dir:
             with tempfile.TemporaryDirectory() as cache_dir:
@@ -627,6 +643,10 @@ class TestLogSearch(TestBase):
                             # in the invocation
                             "--limit",
                             "13",
+                            # also not defined in the config so it can be
+                            # defined here
+                            "--job-group",
+                            "group1",
                             # defined in the config so it is ignored if
                             # provided at the invocation
                             "--project",
@@ -653,6 +673,15 @@ class TestLogSearch(TestBase):
         # result and limit is overridden via cli, tenant is defaulted, project
         # from cli is ignored
         self.assertEqual(
-            ("openstack", "my-project", None, set(), [], "FAILURE", None, 13),
+            (
+                "openstack",
+                "my-project",
+                None,
+                {"job1", "job2"},
+                [],
+                "FAILURE",
+                None,
+                13,
+            ),
             self.fake_zuul.list_build_calls[0],
         )
