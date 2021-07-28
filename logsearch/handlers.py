@@ -134,7 +134,6 @@ class BuildShowCmd(Cmd):
 
 class BuildCmd(Cmd):
     def execute(self) -> None:
-        # TODO(gibi): move all the args access to Config
         builds = self.zuul_api.list_builds(
             self.config.tenant,
             self.config.project,
@@ -188,7 +187,6 @@ class LogSearchCmd(Cmd):
         return build_uuid_to_build, build_uuid_to_files
 
     def _get_builds(self) -> List[Dict[str, Any]]:
-        # TODO(gibi): move all the args access to Config
         builds = self.zuul_api.list_builds(
             self.config.tenant,
             self.config.project,

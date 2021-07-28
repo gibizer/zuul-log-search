@@ -5,7 +5,7 @@
 - [ ] Support multi line regex
 - [ ] Make the output format of the log subcommand configurable. E.g. full,
   only-matched-lines
-- [ ] Move all the args access to the Config object
+- [ ] Support job groups in stored search
 
 Done:
 - [x] Pre validate regex coming from the command line
@@ -21,3 +21,4 @@ Done:
   be used in --job search
 - [x] Config file to store named searches, and the ability to re-run the search
   by name. Similarly, how elastic re-check signature works.
+- [x] Move all the args access to the Config object
