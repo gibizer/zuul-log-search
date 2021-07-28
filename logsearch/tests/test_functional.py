@@ -194,6 +194,31 @@ class TestBuildList(TestBase):
             10,
         )
 
+    def test_with_job_groups_not_found(self):
+        config = {
+            "job-groups": {
+                "a-group": ["job1", "job2"],
+            }
+        }
+        with test_config(config) as config_dir:
+            with collect_stdout() as stdout:
+                main.main(
+                    args=[
+                        "--config-dir",
+                        config_dir,
+                        "build",
+                        "--job-group",
+                        "b-group",
+                    ]
+                )
+
+        output = stdout.getvalue()
+        self.assertEqual(
+            "The requested job group b-group is not defined in the config "
+            "files.\n",
+            output,
+        )
+
 
 class TestBuildShow(TestBase):
     def setUp(self) -> None:
@@ -438,6 +463,35 @@ class TestLogSearch(TestBase):
         self.assertNotIn("do not emit", output)
         self.assertIn("fake-url", output)
         self.assertIn("1/1", output)
+
+    def test_stored_search_not_found(self):
+        config = {
+            "searches": {
+                "my-search1": {
+                    "regex": "some-pattern",
+                }
+            }
+        }
+        with test_config(config) as config_dir:
+            with tempfile.TemporaryDirectory() as cache_dir:
+                with collect_stdout() as stdout:
+                    main.main(
+                        args=[
+                            "--config-dir",
+                            config_dir,
+                            "--log-store-dir",
+                            cache_dir,
+                            "storedsearch",
+                            "my-search2",
+                        ]
+                    )
+
+        output = stdout.getvalue()
+        self.assertEqual(
+            "The stored search my-search2 not found in the configuration. "
+            "Available searches ['my-search1'].\n",
+            output,
+        )
 
     def test_stored_search_cli_defaults_applied(self):
         self.fake_zuul.set_builds([self.build1])

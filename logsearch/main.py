@@ -5,8 +5,9 @@ import sys
 import traceback
 from typing import Callable
 
-from logsearch import zuul
+from logsearch import config
 from logsearch import handlers
+from logsearch import zuul
 
 LOG = logging.getLogger("__main__")
 
@@ -265,6 +266,7 @@ def main(args=tuple(sys.argv[1:])) -> None:
         handler()
     except (
         handlers.CmdException,
+        config.ConfigError,
         zuul.ZuulException,
     ) as e:
         print(e)
