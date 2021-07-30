@@ -101,15 +101,17 @@ class Config:
             )
         self._persistent_search_config = search
 
-    def _get_persistent_search_config(self, name):
+    def _get_persistent_search_config(self, name, default=None):
         if not self._persistent_search_config:
-            return None
-        return self._persistent_search_config.get(name)
+            return default
+        return self._persistent_search_config.get(name, default)
 
     @property
     def jobs(self) -> Set[str]:
-        p_jobs = self._get_persistent_search_config("jobs") or set()
-        p_job_groups = self._get_persistent_search_config("job-groups")
+        p_jobs = (
+            set(self._get_persistent_search_config("jobs", set())) or set()
+        )
+        p_job_groups = self._get_persistent_search_config("job-groups", set())
         if p_jobs or p_job_groups:
             p_jobs.update(self._expand_job_groups(p_job_groups))
             return p_jobs

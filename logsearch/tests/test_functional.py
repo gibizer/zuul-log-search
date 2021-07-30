@@ -685,3 +685,125 @@ class TestLogSearch(TestBase):
             ),
             self.fake_zuul.list_build_calls[0],
         )
+
+    def test_stored_search_only_jobs_but_no_job_groups_in_config(self):
+        self.fake_zuul.set_builds([self.build1])
+        self.fake_zuul.add_log_content(
+            self.build1["uuid"],
+            "job-output.txt",
+            "foo\n"
+            "... some-pattern and bar\n"
+            "baz\n"
+            "another some-pattern instance\n",
+        )
+        config = {
+            "searches": {
+                "my-search1": {
+                    "jobs": ["job3"],
+                    "regex": "some-pattern",
+                }
+            },
+        }
+        with test_config(config) as config_dir:
+            with tempfile.TemporaryDirectory() as cache_dir:
+                with collect_stdout() as stdout:
+                    main.main(
+                        args=[
+                            "--config-dir",
+                            config_dir,
+                            "--log-store-dir",
+                            cache_dir,
+                            "storedsearch",
+                            "my-search1",
+                        ]
+                    )
+
+        output = stdout.getvalue()
+        # job-output.txt is defaulted
+        self.assertRegex(
+            output, "fake-uuid:.*job-output.txt:2:... some-pattern and bar"
+        )
+        self.assertRegex(
+            output,
+            "fake-uuid:.*job-output.txt:4:another some-pattern instance",
+        )
+        self.assertIn("fake-url", output)
+        self.assertIn("1/1", output)
+        self.assertEqual(1, len(self.fake_zuul.list_build_calls))
+        # tenant and limit are defaulted
+        self.assertEqual(
+            (
+                "openstack",
+                None,
+                None,
+                {"job3"},
+                [],
+                None,
+                None,
+                10,
+            ),
+            self.fake_zuul.list_build_calls[0],
+        )
+
+    def test_stored_search_both_jobs_and_job_groups_in_config(self):
+        self.fake_zuul.set_builds([self.build1])
+        self.fake_zuul.add_log_content(
+            self.build1["uuid"],
+            "job-output.txt",
+            "foo\n"
+            "... some-pattern and bar\n"
+            "baz\n"
+            "another some-pattern instance\n",
+        )
+        config = {
+            "job-groups": {
+                "group1": ["job1", "job2"],
+            },
+            "searches": {
+                "my-search1": {
+                    "job-groups": ["group1"],
+                    "jobs": ["job3"],
+                    "regex": "some-pattern",
+                }
+            },
+        }
+        with test_config(config) as config_dir:
+            with tempfile.TemporaryDirectory() as cache_dir:
+                with collect_stdout() as stdout:
+                    main.main(
+                        args=[
+                            "--config-dir",
+                            config_dir,
+                            "--log-store-dir",
+                            cache_dir,
+                            "storedsearch",
+                            "my-search1",
+                        ]
+                    )
+
+        output = stdout.getvalue()
+        # job-output.txt is defaulted
+        self.assertRegex(
+            output, "fake-uuid:.*job-output.txt:2:... some-pattern and bar"
+        )
+        self.assertRegex(
+            output,
+            "fake-uuid:.*job-output.txt:4:another some-pattern instance",
+        )
+        self.assertIn("fake-url", output)
+        self.assertIn("1/1", output)
+        self.assertEqual(1, len(self.fake_zuul.list_build_calls))
+        # tenant and limit are defaulted
+        self.assertEqual(
+            (
+                "openstack",
+                None,
+                None,
+                {"job1", "job2", "job3"},
+                [],
+                None,
+                None,
+                10,
+            ),
+            self.fake_zuul.list_build_calls[0],
+        )
