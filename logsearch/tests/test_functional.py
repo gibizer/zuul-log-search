@@ -3,7 +3,7 @@ import io
 import os
 import sys
 import tempfile
-from typing import Generator, Dict
+from typing import Generator, Dict, List
 import unittest
 from unittest import mock
 import yaml
@@ -62,6 +62,22 @@ class TestBase(unittest.TestCase):
             "log_url": "fake-log-url",
         }
 
+    @staticmethod
+    def _run_cli(config: Dict = None, args: List[str] = None) -> str:
+        with collect_stdout() as stdout:
+            with test_config(config or {}) as config_dir:
+                with tempfile.TemporaryDirectory() as cache_dir:
+                    main.main(
+                        args=[
+                            "--config-dir",
+                            config_dir,
+                            "--log-store-dir",
+                            cache_dir,
+                            *args,
+                        ]
+                    )
+        return stdout.getvalue()
+
 
 class TestBuildList(TestBase):
     def setUp(self):
@@ -71,10 +87,8 @@ class TestBuildList(TestBase):
     def test_default(self, mock_zuul_list_builds):
         mock_zuul_list_builds.return_value = [self.build1]
 
-        with collect_stdout() as stdout:
-            main.main(args=["build"])
+        output = self._run_cli(args=["build"])
 
-        output = stdout.getvalue()
         self.assertIn("fake-uuid", output)
         self.assertIn("fake-url", output)
         mock_zuul_list_builds.assert_called_once_with(
@@ -85,10 +99,8 @@ class TestBuildList(TestBase):
     def test_default_multiple_result(self, mock_zuul_list_builds):
         mock_zuul_list_builds.return_value = [self.build1, self.build2]
 
-        with collect_stdout() as stdout:
-            main.main(args=["build"])
+        output = self._run_cli(args=["build"])
 
-        output = stdout.getvalue()
         self.assertIn("fake-uuid", output)
         self.assertIn("fake-url", output)
         self.assertIn("fake-uuid2", output)
@@ -101,31 +113,29 @@ class TestBuildList(TestBase):
     def test_query_args_with_repetition(self, mock_zuul_list_builds):
         mock_zuul_list_builds.return_value = [self.build1]
 
-        with collect_stdout() as stdout:
-            main.main(
-                args=[
-                    "build",
-                    "--project",
-                    "nova",
-                    "--job",
-                    "nova-grenade-multinode",
-                    "--job",
-                    "nova-next",
-                    "--branch",
-                    "master",
-                    "--branch",
-                    "stable/wallaby",
-                    "--result",
-                    "FAILURE",
-                    "--pipeline",
-                    "gate",
-                    "--voting",
-                    "--limit",
-                    "3",
-                ]
-            )
+        output = self._run_cli(
+            args=[
+                "build",
+                "--project",
+                "nova",
+                "--job",
+                "nova-grenade-multinode",
+                "--job",
+                "nova-next",
+                "--branch",
+                "master",
+                "--branch",
+                "stable/wallaby",
+                "--result",
+                "FAILURE",
+                "--pipeline",
+                "gate",
+                "--voting",
+                "--limit",
+                "3",
+            ]
+        )
 
-        output = stdout.getvalue()
         self.assertIn("fake-uuid", output)
         self.assertIn("fake-url", output)
         mock_zuul_list_builds.assert_called_once_with(
@@ -145,10 +155,8 @@ class TestBuildList(TestBase):
             "Cannot access Zuul"
         )
 
-        with collect_stdout() as stdout:
-            main.main(args=["build"])
+        output = self._run_cli(args=["build"])
 
-        output = stdout.getvalue()
         self.assertIn("Cannot access Zuul", output)
         mock_zuul_list_builds.assert_called_once_with(
             "openstack", None, None, set(), [], None, None, 10
@@ -164,23 +172,19 @@ class TestBuildList(TestBase):
                 "c-group": ["job4"],
             }
         }
-        with test_config(config) as config_dir:
-            with collect_stdout() as stdout:
-                main.main(
-                    args=[
-                        "--config-dir",
-                        config_dir,
-                        "build",
-                        "--job",
-                        "extra-job",
-                        "--job-group",
-                        "a-group",
-                        "--job-group",
-                        "b-group",
-                    ]
-                )
+        output = self._run_cli(
+            config=config,
+            args=[
+                "build",
+                "--job",
+                "extra-job",
+                "--job-group",
+                "a-group",
+                "--job-group",
+                "b-group",
+            ],
+        )
 
-        output = stdout.getvalue()
         self.assertIn("fake-uuid", output)
         self.assertIn("fake-url", output)
         mock_zuul_list_builds.assert_called_once_with(
@@ -200,19 +204,15 @@ class TestBuildList(TestBase):
                 "a-group": ["job1", "job2"],
             }
         }
-        with test_config(config) as config_dir:
-            with collect_stdout() as stdout:
-                main.main(
-                    args=[
-                        "--config-dir",
-                        config_dir,
-                        "build",
-                        "--job-group",
-                        "b-group",
-                    ]
-                )
+        output = self._run_cli(
+            config=config,
+            args=[
+                "build",
+                "--job-group",
+                "b-group",
+            ],
+        )
 
-        output = stdout.getvalue()
         self.assertEqual(
             "The requested job group b-group is not defined in the config "
             "files.\n",
@@ -248,10 +248,8 @@ class TestBuildShow(TestBase):
 
         mock_get_build.return_value = self.build1
 
-        with collect_stdout() as stdout:
-            main.main(args=["build-show", "fake-uuid"])
+        output = self._run_cli(args=["build-show", "fake-uuid"])
 
-        output = stdout.getvalue()
         self.assertIn("fake-uuid", output)
         self.assertIn("fake-url", output)
         mock_get_build.assert_called_once_with("openstack", "fake-uuid")
@@ -278,18 +276,13 @@ class TestLogSearch(TestBase):
             "another some-pattern instance\n",
         )
 
-        with tempfile.TemporaryDirectory() as cache_dir:
-            with collect_stdout() as stdout:
-                main.main(
-                    args=[
-                        "--log-store-dir",
-                        cache_dir,
-                        "log",
-                        "some-pattern",
-                    ]
-                )
+        output = self._run_cli(
+            args=[
+                "log",
+                "some-pattern",
+            ]
+        )
 
-        output = stdout.getvalue()
         self.assertRegex(
             output, "fake-uuid:.*job-output.txt:2:... some-pattern and bar"
         )
@@ -311,18 +304,13 @@ class TestLogSearch(TestBase):
             "another some-pattern instance\n",
         )
 
-        with tempfile.TemporaryDirectory() as cache_dir:
-            with collect_stdout() as stdout:
-                main.main(
-                    args=[
-                        "--log-store-dir",
-                        cache_dir,
-                        "log",
-                        "non-matching-pattern",
-                    ]
-                )
+        output = self._run_cli(
+            args=[
+                "log",
+                "non-matching-pattern",
+            ]
+        )
 
-        output = stdout.getvalue()
         self.assertNotIn("pattern", output)
         self.assertIn("fake-uuid", output)
         self.assertIn("fake-url", output)
@@ -348,22 +336,17 @@ class TestLogSearch(TestBase):
             self.build2["uuid"], "other-file", "some-pattern\n"
         )
 
-        with tempfile.TemporaryDirectory() as cache_dir:
-            with collect_stdout() as stdout:
-                main.main(
-                    args=[
-                        "--log-store-dir",
-                        cache_dir,
-                        "log",
-                        "--file",
-                        "job-output.txt",
-                        "--file",
-                        "other-file",
-                        "pattern",
-                    ]
-                )
+        output = self._run_cli(
+            args=[
+                "log",
+                "--file",
+                "job-output.txt",
+                "--file",
+                "other-file",
+                "pattern",
+            ]
+        )
 
-        output = stdout.getvalue()
         self.assertRegex(
             output, "fake-uuid:.*job-output.txt:2:... some-pattern and bar"
         )
@@ -385,22 +368,17 @@ class TestLogSearch(TestBase):
             self.build2["uuid"], "job-output.txt", "pattern\n"
         )
 
-        with tempfile.TemporaryDirectory() as cache_dir:
-            with collect_stdout() as stdout:
-                main.main(
-                    args=[
-                        "--log-store-dir",
-                        cache_dir,
-                        "log",
-                        "--file",
-                        "job-output.txt",
-                        "--file",
-                        "non-existent-file",
-                        "pattern",
-                    ]
-                )
+        output = self._run_cli(
+            args=[
+                "log",
+                "--file",
+                "job-output.txt",
+                "--file",
+                "non-existent-file",
+                "pattern",
+            ]
+        )
 
-        output = stdout.getvalue()
         self.assertIn("fake-uuid: empty log URL. Skipping.", output)
         self.assertIn(
             "fake-uuid2: non-existent-file: \nDownload failed: HTTPError",
@@ -433,24 +411,19 @@ class TestLogSearch(TestBase):
             "do not emit\n",
         )
 
-        with tempfile.TemporaryDirectory() as cache_dir:
-            with collect_stdout() as stdout:
-                main.main(
-                    args=[
-                        "--log-store-dir",
-                        cache_dir,
-                        "log",
-                        "--file",
-                        "file1",
-                        "--file",
-                        "file2",
-                        "--context",
-                        "1",
-                        "match",
-                    ]
-                )
+        output = self._run_cli(
+            args=[
+                "log",
+                "--file",
+                "file1",
+                "--file",
+                "file2",
+                "--context",
+                "1",
+                "match",
+            ]
+        )
 
-        output = stdout.getvalue()
         self.assertIn("before context", output)
         self.assertIn("match", output)
         self.assertIn("after context", output)
@@ -472,21 +445,14 @@ class TestLogSearch(TestBase):
                 }
             }
         }
-        with test_config(config) as config_dir:
-            with tempfile.TemporaryDirectory() as cache_dir:
-                with collect_stdout() as stdout:
-                    main.main(
-                        args=[
-                            "--config-dir",
-                            config_dir,
-                            "--log-store-dir",
-                            cache_dir,
-                            "storedsearch",
-                            "my-search2",
-                        ]
-                    )
+        output = self._run_cli(
+            config=config,
+            args=[
+                "storedsearch",
+                "my-search2",
+            ],
+        )
 
-        output = stdout.getvalue()
         self.assertEqual(
             "The stored search my-search2 not found in the configuration. "
             "Available searches ['my-search1'].\n",
@@ -510,21 +476,14 @@ class TestLogSearch(TestBase):
                 }
             }
         }
-        with test_config(config) as config_dir:
-            with tempfile.TemporaryDirectory() as cache_dir:
-                with collect_stdout() as stdout:
-                    main.main(
-                        args=[
-                            "--config-dir",
-                            config_dir,
-                            "--log-store-dir",
-                            cache_dir,
-                            "storedsearch",
-                            "my-search1",
-                        ]
-                    )
+        output = self._run_cli(
+            config=config,
+            args=[
+                "storedsearch",
+                "my-search1",
+            ],
+        )
 
-        output = stdout.getvalue()
         # job-output.txt is defaulted
         self.assertRegex(
             output, "fake-uuid:.*job-output.txt:2:... some-pattern and bar"
@@ -568,21 +527,14 @@ class TestLogSearch(TestBase):
                 }
             },
         }
-        with test_config(config) as config_dir:
-            with tempfile.TemporaryDirectory() as cache_dir:
-                with collect_stdout() as stdout:
-                    main.main(
-                        args=[
-                            "--config-dir",
-                            config_dir,
-                            "--log-store-dir",
-                            cache_dir,
-                            "storedsearch",
-                            "my-search1",
-                        ]
-                    )
+        output = self._run_cli(
+            config=config,
+            args=[
+                "storedsearch",
+                "my-search1",
+            ],
+        )
 
-        output = stdout.getvalue()
         self.assertRegex(
             output, "fake-uuid:.*job-output2.txt:2:... some-pattern and bar"
         )
@@ -629,36 +581,30 @@ class TestLogSearch(TestBase):
                 }
             },
         }
-        with test_config(config) as config_dir:
-            with tempfile.TemporaryDirectory() as cache_dir:
-                with collect_stdout() as stdout:
-                    main.main(
-                        args=[
-                            "--config-dir",
-                            config_dir,
-                            "--log-store-dir",
-                            cache_dir,
-                            "storedsearch",
-                            # not defined in the config so it can be define
-                            # in the invocation
-                            "--limit",
-                            "13",
-                            # also not defined in the config so it can be
-                            # defined here
-                            "--job-group",
-                            "group1",
-                            # defined in the config so it is ignored if
-                            # provided at the invocation
-                            "--project",
-                            "other-project",
-                            # ditto ignored
-                            "--file",
-                            "other-file",
-                            "my-search1",
-                        ]
-                    )
 
-        output = stdout.getvalue()
+        output = self._run_cli(
+            config=config,
+            args=[
+                "storedsearch",
+                # not defined in the config so it can be define
+                # in the invocation
+                "--limit",
+                "13",
+                # also not defined in the config so it can be
+                # defined here
+                "--job-group",
+                "group1",
+                # defined in the config so it is ignored if
+                # provided at the invocation
+                "--project",
+                "other-project",
+                # ditto ignored
+                "--file",
+                "other-file",
+                "my-search1",
+            ],
+        )
+
         self.assertRegex(
             output, "fake-uuid:.*job-output2.txt:2:... some-pattern and bar"
         )
@@ -704,21 +650,15 @@ class TestLogSearch(TestBase):
                 }
             },
         }
-        with test_config(config) as config_dir:
-            with tempfile.TemporaryDirectory() as cache_dir:
-                with collect_stdout() as stdout:
-                    main.main(
-                        args=[
-                            "--config-dir",
-                            config_dir,
-                            "--log-store-dir",
-                            cache_dir,
-                            "storedsearch",
-                            "my-search1",
-                        ]
-                    )
 
-        output = stdout.getvalue()
+        output = self._run_cli(
+            config=config,
+            args=[
+                "storedsearch",
+                "my-search1",
+            ],
+        )
+
         # job-output.txt is defaulted
         self.assertRegex(
             output, "fake-uuid:.*job-output.txt:2:... some-pattern and bar"
@@ -767,21 +707,14 @@ class TestLogSearch(TestBase):
                 }
             },
         }
-        with test_config(config) as config_dir:
-            with tempfile.TemporaryDirectory() as cache_dir:
-                with collect_stdout() as stdout:
-                    main.main(
-                        args=[
-                            "--config-dir",
-                            config_dir,
-                            "--log-store-dir",
-                            cache_dir,
-                            "storedsearch",
-                            "my-search1",
-                        ]
-                    )
+        output = self._run_cli(
+            config=config,
+            args=[
+                "storedsearch",
+                "my-search1",
+            ],
+        )
 
-        output = stdout.getvalue()
         # job-output.txt is defaulted
         self.assertRegex(
             output, "fake-uuid:.*job-output.txt:2:... some-pattern and bar"
