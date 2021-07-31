@@ -72,7 +72,7 @@ class BuildsTable:
 
         for arg_name in ["branches", "jobs"]:
             value = getattr(args, arg_name)
-            if value == [] or len(value) > 1:
+            if len(value) == 0 or len(value) > 1:
                 fields.append(self.ARG_TO_FIELD_NAMES.get(arg_name, arg_name))
 
         return fields
@@ -143,6 +143,7 @@ class BuildCmd(Cmd):
             self.config.result,
             self.config.voting,
             self.config.limit,
+            self.config.review_id,
         )
         print(BuildsTable(builds, self.config))
 
@@ -196,6 +197,7 @@ class LogSearchCmd(Cmd):
             self.config.result,
             self.config.voting,
             self.config.limit,
+            self.config.review_id,
         )
         return builds
 

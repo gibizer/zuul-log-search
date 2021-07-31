@@ -43,8 +43,19 @@ class FakeZuul(zuul.API):
         result: Optional[str],
         voting: Optional[bool],
         limit: Optional[int],
+        change: Optional[int],
     ) -> List[Dict]:
         self.list_build_calls.append(
-            (tenant, project, pipeline, jobs, branches, result, voting, limit)
+            (
+                tenant,
+                project,
+                pipeline,
+                jobs,
+                branches,
+                result,
+                voting,
+                limit,
+                change,
+            )
         )
         return self.builds

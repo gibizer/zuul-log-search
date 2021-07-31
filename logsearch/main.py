@@ -94,6 +94,12 @@ class ArgHandler:
             default=10,
             help="Number of builds returned. Defaulted to 10",
         )
+        arg_parser.add_argument(
+            "--review",
+            type=int,
+            dest="review_id",
+            help="The number from the gerrit URL of a review.",
+        )
 
     def _add_logsearch_filter_args(
         self, argparser: argparse.ArgumentParser

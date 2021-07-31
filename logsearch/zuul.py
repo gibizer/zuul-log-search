@@ -43,6 +43,7 @@ class API:
         result: Optional[str],
         voting: Optional[bool],
         limit: Optional[int],
+        change: Optional[int],
     ) -> List[Dict]:
         params: Dict = {}
         if project is not None:
@@ -57,6 +58,8 @@ class API:
             params["voting"] = "1" if voting else "0"
         if limit is not None:
             params["limit"] = limit
+        if change is not None:
+            params["change"] = change
 
         try:
             r = requests.get(

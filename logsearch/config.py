@@ -223,3 +223,7 @@ class Config:
             config_yaml_stream,
         )
         return config_yaml_stream.getvalue()
+
+    @property
+    def review_id(self) -> int:
+        return self._args.review_id

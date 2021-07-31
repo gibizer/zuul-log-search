@@ -21,17 +21,18 @@ class TestZuulAPI(unittest.TestCase):
             project=None,
             pipeline=None,
             branches=[],
-            jobs=[],
+            jobs=set(),
             result=None,
             limit=None,
             voting=None,
+            change=None,
         )
 
         self.assertEqual(mock.sentinel.json_rsp, result)
         mock_get.assert_called_once_with(
             "https://fake_url/tenant/sentinel.tenant/builds",
             params={
-                "job_name": [],
+                "job_name": set(),
                 "branch": [],
             },
         )
@@ -51,10 +52,11 @@ class TestZuulAPI(unittest.TestCase):
             project="a_project",
             pipeline="a_pipeline",
             branches=["a_branch", "b_branch"],
-            jobs=["a_job", "b_job"],
+            jobs={"a_job", "b_job"},
             result="a_result",
             limit=10,
             voting=True,
+            change=803082,
         )
 
         mock_get.assert_called_once_with(
@@ -62,11 +64,12 @@ class TestZuulAPI(unittest.TestCase):
             params={
                 "project": "a_project",
                 "pipeline": "a_pipeline",
-                "job_name": ["a_job", "b_job"],
+                "job_name": {"a_job", "b_job"},
                 "branch": ["a_branch", "b_branch"],
                 "result": "a_result",
                 "voting": "1",
                 "limit": 10,
+                "change": 803082,
             },
         )
         mock_rsp.json.assert_called_once_with()

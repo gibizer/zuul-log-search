@@ -92,7 +92,7 @@ class TestBuildList(TestBase):
         self.assertIn("fake-uuid", output)
         self.assertIn("fake-url", output)
         mock_zuul_list_builds.assert_called_once_with(
-            "openstack", None, None, set(), [], None, None, 10
+            "openstack", None, None, set(), [], None, None, 10, None
         )
 
     @mock.patch("logsearch.zuul.API.list_builds")
@@ -106,7 +106,7 @@ class TestBuildList(TestBase):
         self.assertIn("fake-uuid2", output)
         self.assertIn("fake-url2", output)
         mock_zuul_list_builds.assert_called_once_with(
-            "openstack", None, None, set(), [], None, None, 10
+            "openstack", None, None, set(), [], None, None, 10, None
         )
 
     @mock.patch("logsearch.zuul.API.list_builds")
@@ -133,6 +133,8 @@ class TestBuildList(TestBase):
                 "--voting",
                 "--limit",
                 "3",
+                "--review",
+                "800087",
             ]
         )
 
@@ -147,6 +149,7 @@ class TestBuildList(TestBase):
             "FAILURE",
             True,
             3,
+            800087,
         )
 
     @mock.patch("logsearch.zuul.API.list_builds")
@@ -159,7 +162,7 @@ class TestBuildList(TestBase):
 
         self.assertIn("Cannot access Zuul", output)
         mock_zuul_list_builds.assert_called_once_with(
-            "openstack", None, None, set(), [], None, None, 10
+            "openstack", None, None, set(), [], None, None, 10, None
         )
 
     @mock.patch("logsearch.zuul.API.list_builds")
@@ -196,6 +199,7 @@ class TestBuildList(TestBase):
             None,
             None,
             10,
+            None,
         )
 
     def test_with_job_groups_not_found(self):
@@ -275,6 +279,7 @@ class TestBuildList(TestBase):
             None,
             None,
             10,
+            None,
         )
 
 
@@ -555,7 +560,7 @@ class TestLogSearch(TestBase):
         self.assertEqual(1, len(self.fake_zuul.list_build_calls))
         # tenant and limit are defaulted
         self.assertEqual(
-            ("openstack", None, None, set(), [], None, None, 10),
+            ("openstack", None, None, set(), [], None, None, 10, None),
             self.fake_zuul.list_build_calls[0],
         )
 
@@ -612,6 +617,7 @@ class TestLogSearch(TestBase):
                 None,
                 True,
                 11,
+                None,
             ),
             self.fake_zuul.list_build_calls[0],
         )
@@ -686,6 +692,7 @@ class TestLogSearch(TestBase):
                 "FAILURE",
                 None,
                 13,
+                None,
             ),
             self.fake_zuul.list_build_calls[0],
         )
@@ -739,6 +746,7 @@ class TestLogSearch(TestBase):
                 None,
                 None,
                 10,
+                None,
             ),
             self.fake_zuul.list_build_calls[0],
         )
@@ -795,6 +803,7 @@ class TestLogSearch(TestBase):
                 None,
                 None,
                 10,
+                None,
             ),
             self.fake_zuul.list_build_calls[0],
         )
