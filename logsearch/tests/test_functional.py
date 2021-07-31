@@ -3,7 +3,7 @@ import io
 import os
 import sys
 import tempfile
-from typing import Generator, Dict, List
+from typing import Generator, Dict, List, Union, Tuple, Iterable
 import unittest
 from unittest import mock
 import yaml
@@ -63,7 +63,7 @@ class TestBase(unittest.TestCase):
         }
 
     @staticmethod
-    def _run_cli(config: Dict = None, args: List[str] = None) -> str:
+    def _run_cli(config: Dict = None, args: Iterable[str] = ()) -> str:
         with collect_stdout() as stdout:
             with test_config(config or {}) as config_dir:
                 with tempfile.TemporaryDirectory() as cache_dir:
