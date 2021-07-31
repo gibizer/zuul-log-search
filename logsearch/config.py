@@ -148,6 +148,9 @@ class PersistentSearch:
     def to_dict(self) -> Dict:
         return {self._name: self._search}
 
+    def __str__(self):
+        return str(self.to_dict())
+
 
 class NullPersistentSearch(PersistentSearch):
     def __init__(self, config: PersistentConfig):
@@ -182,12 +185,12 @@ class Config:
             )
             self._jobs.update(expanded_jobs)
 
-        if "files" in self._args:
-            # ensure that file list has unique elements
+        # ensure that file list has unique elements and defaulted if not
+        # provided
+        if "files" not in self._args or not self._args.files:
+            self._args.files = {"job-output.txt"}
+        else:
             self._args.files = set(self._args.files)
-            # if not provided default it
-            if not self._args.files:
-                self._args.files = {"job-output.txt"}
 
         if "patchset" in self._args and self._args.patchset:
             if "review_id" not in self._args or not self._args.review_id:
@@ -203,9 +206,9 @@ class Config:
         # A persistent search is requested so we need to load the search
         # config from there.
         if "search" in self._args:
-            self._apply_persistent_search_config(self._args.search)
+            self.apply_persistent_search_config(self._args.search)
 
-    def _apply_persistent_search_config(self, name):
+    def apply_persistent_search_config(self, name):
         search = self._config.searches.get(name)
         if not search:
             raise ConfigError(
@@ -213,6 +216,9 @@ class Config:
                 f"Available searches {list(self._config.searches.keys())}."
             )
         self._requested_search = search
+
+    def remove_applied_persistent_search_config(self):
+        self._requested_search = NullPersistentSearch(self._config)
 
     @property
     def jobs(self) -> Set[str]:
@@ -255,17 +261,21 @@ class Config:
 
     @property
     def before_context(self) -> int:
-        return (
-            self._requested_search.before_context or self._args.before_context
+        return self._requested_search.before_context or (
+            self._args.before_context if "before_context" in self._args else 0
         )
 
     @property
     def after_context(self) -> int:
-        return self._requested_search.after_context or self._args.after_context
+        return self._requested_search.after_context or (
+            self._args.after_context if "after_context" in self._args else 0
+        )
 
     @property
     def context(self) -> int:
-        return self._requested_search.context or self._args.context
+        return self._requested_search.context or (
+            self._args.context if "context" in self._args else 0
+        )
 
     @property
     def log_store_dir(self) -> str:
@@ -295,3 +305,7 @@ class Config:
     @property
     def patchset(self) -> int:
         return self._args.patchset
+
+    @property
+    def persistent_config(self) -> PersistentConfig:
+        return self._config

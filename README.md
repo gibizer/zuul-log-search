@@ -147,6 +147,65 @@ the command line to invoke the stored query.  See
 
 When running stored searches you can fine tune the query with same CLI
 parameters than in normal logsearch. But note that only those parameters can
-provided via the CLI that is not defined in the stored search. If a parameter
-provided via the CLI that is also defined in the config, the CLI value will be
-ignored.
+be provided via the CLI that is not defined in the stored search. If a
+parameter is provided via the CLI that is also defined in the config, the CLI
+value will be ignored.
+
+Classifying build results based on stored searches
+--------------------------------------------------
+If you have a bunch of stored queries and a list of build results, then the
+``match`` command can be used to find out if one or more stored search matches
+with the builds. For example if you have stored searches for logs that is
+unique for a known bug then you can use this subcommand to classify recent
+build failures and see if they are a re-occurrence of a known bug.
+
+The ``match`` command takes the same parameters as the ``build`` command to
+query builds then it iterates through all the stores searches to see which
+matches the build first based on the build parameters (e.g. job name,
+project...) then for the matching ones runs the log searching logic.
+
+For example the following command tries to figure out the reason of the failed
+job run in review https://review.opendev.org/c/openstack/nova/+/792394/22
+```shell
+$ logsearch match --review 792394 --patchset 22 --result FAILURE
+Found builds to match:
++----------------------------------+---------------------+----------------+----------+--------+---------------------------------+
+| uuid                             | finished            | project        | pipeline | branch | job                             |
++----------------------------------+---------------------+----------------+----------+--------+---------------------------------+
+| bf050b127c4d4ac7ba477d97d1c97dae | 2021-08-21T13:04:48 | openstack/nova | check    | master | openstack-tox-lower-constraints |
++----------------------------------+---------------------+----------------+----------+--------+---------------------------------+
+Matching stored searches for build bf050b127c4d4ac7ba477d97d1c97dae
+bf050b127c4d4ac7ba477d97d1c97dae: Search bug-1936849-test_stop_serial_proxy matched build query.
+bf050b127c4d4ac7ba477d97d1c97dae:.logsearch/bf050b127c4d4ac7ba477d97d1c97dae/job-output.txt:26054:2021-08-21 13:02:33.513129 | ubuntu-bionic |     b'  File "/home/zuul/src/opendev.org/openstack/nova/nova/tests/unit/virt/hyperv/test_serialproxy.py", line 70, in test_stop_serial_proxy'
+bf050b127c4d4ac7ba477d97d1c97dae:.logsearch/bf050b127c4d4ac7ba477d97d1c97dae/job-output.txt:28287:2021-08-21 13:03:25.744852 | ubuntu-bionic |     b'  File "/home/zuul/src/opendev.org/openstack/nova/nova/tests/unit/virt/hyperv/test_serialproxy.py", line 70, in test_stop_serial_proxy'
+
+bf050b127c4d4ac7ba477d97d1c97dae: Search bug-1936849-test_stop_serial_proxy matched signature!
+bf050b127c4d4ac7ba477d97d1c97dae: Search bug-1823251 matched build query.
+
+
++----------------------------------+---------------------+----------------+----------+--------+---------------------------------+----------------------------------------+
+| uuid                             | finished            | project        | pipeline | branch | job                             | matching searches                      |
++----------------------------------+---------------------+----------------+----------+--------+---------------------------------+----------------------------------------+
+| bf050b127c4d4ac7ba477d97d1c97dae | 2021-08-21T13:04:48 | openstack/nova | check    | master | openstack-tox-lower-constraints | ['bug-1936849-test_stop_serial_proxy'] |
++----------------------------------+---------------------+----------------+----------+--------+---------------------------------+----------------------------------------+
+```
+
+Or you can try to classify recent failed builds on the gate:
+```shell
+$ logsearch match --job-group nova-devstack --project openstack/nova --branch master --pipeline gate --result FAILURE  --voting
+# ...snip long output of matching logs
++----------------------------------+---------------------+-----------------------------------+----------------------------+-------------------------------------------------------------------------------------------------------------+
+| uuid                             | finished            | review                            | job                        | matching searches                                                                                           |
++----------------------------------+---------------------+-----------------------------------+----------------------------+-------------------------------------------------------------------------------------------------------------+
+| f75060a95aea416bb5474fbda4428fae | 2021-08-20T22:51:44 | https://review.opendev.org/802918 | nova-multi-cell            | ['bug-xxx-virtual-interface-creation-timeout']                                                              |
+| db22d92fefcf4819b1fa12c56cd0c3b7 | 2021-08-20T17:12:27 | https://review.opendev.org/796208 | tempest-integrated-compute | []                                                                                                          |
+| fb2574989dcd41069df44b37fd74db01 | 2021-08-20T00:35:47 | https://review.opendev.org/804285 | tempest-ipv6-only          | ['bug-1931864']                                                                                             |
+| 2f917c70d405484fb7f7d20c667f651d | 2021-08-20T00:33:44 | https://review.opendev.org/804285 | tempest-integrated-compute | ['bug-1931864']                                                                                             |
+| a16c68692c57404c8270ac776de63a86 | 2021-08-18T16:07:33 | https://review.opendev.org/771363 | nova-multi-cell            | ['bug-xxx-virtual-interface-creation-timeout']                                                              |
+| 8213711612a648a183193f7fedfbc08f | 2021-08-18T12:33:03 | https://review.opendev.org/764435 | tempest-integrated-compute | ['bug-1939108']                                                                                             |
+| 1645c07b070a469fb64665cf090d7b5b | 2021-08-18T11:23:12 | https://review.opendev.org/803778 | tempest-integrated-compute | ['bug-1939108']                                                                                             |
+| fdbda223dc10456db58f922b6435f680 | 2021-08-18T11:24:46 | https://review.opendev.org/803603 | nova-next                  | ['bug-xxx-metadata-request-timed-out.yaml', 'bug-1940425-port-down-in-test_live_migration_with_trunk.yaml'] |
+| 0f71dbe7049f41578c69ae9c96b049f1 | 2021-08-07T13:49:05 | https://review.opendev.org/801285 | nova-multi-cell            | ['bug-xxx-virtual-interface-creation-timeout']                                                              |
+| 806b1a4ad1fc4d1cb78bf55644d13781 | 2021-08-06T14:05:53 | https://review.opendev.org/801714 | nova-multi-cell            | ['bug-xxx-virtual-interface-creation-timeout']                                                              |
++----------------------------------+---------------------+-----------------------------------+----------------------------+-------------------------------------------------------------------------------------------------------------+
+```

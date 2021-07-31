@@ -879,3 +879,205 @@ class TestLogSearch(TestBase):
             ),
             self.fake_zuul.list_build_calls[0],
         )
+
+    def test_match(self):
+        # no stored search queries for the dev branch so this build will not
+        # match any queries
+        build_dev_branch = {
+            "uuid": "fake-uuid-dev",
+            "ref_url": "fake-url",
+            "patchset": "1",
+            "end_time": "fake-date",
+            "project": "fake-project",
+            "branch": "dev",
+            "job_name": "job1",
+            "pipeline": "fake-pipeline",
+            "result": "FAILURE",
+            "log_url": "fake-log-url",
+        }
+        # the pattern would match but not the build query
+        self.fake_zuul.add_log_content(
+            build_dev_branch["uuid"],
+            "job-output.txt",
+            "pattern1\n" "pattern2\n" "pattern3\n",
+        )
+
+        # there will a be stored search that matches the build but there will
+        # not be logs matching the stored regex
+        build_only_build_match = {
+            "uuid": "fake-uuid1",
+            "ref_url": "fake-url",
+            "patchset": "1",
+            "end_time": "fake-date",
+            "project": "fake-project",
+            "branch": "main",
+            "job_name": "job1",
+            "pipeline": "fake-pipeline",
+            "result": "FAILURE",
+            "log_url": "fake-log-url",
+        }
+        # no pattern match
+        self.fake_zuul.add_log_content(
+            build_only_build_match["uuid"],
+            "job-output.txt",
+            "this will not match with anything stored\n",
+        )
+
+        # there will be two stored search that matches the build but only one
+        # of them will match the regex
+        build_two_build_matches_one_log_match = {
+            "uuid": "fake-uuid2",
+            "ref_url": "fake-url",
+            "patchset": "1",
+            "end_time": "fake-date",
+            "project": "fake-project",
+            "branch": "main",
+            "job_name": "job2",
+            "pipeline": "fake-pipeline",
+            "result": "FAILURE",
+            "log_url": "fake-log-url",
+        }
+        # the file content only matches with my-search2
+        self.fake_zuul.add_log_content(
+            build_two_build_matches_one_log_match["uuid"],
+            "job-output.txt",
+            "pattern2\n",
+        )
+
+        # there will be two stored search that matches the build and both
+        # will match the regex too
+        build_two_build_and_log_matches = {
+            "uuid": "fake-uuid3",
+            "ref_url": "fake-url",
+            "patchset": "1",
+            "end_time": "fake-date",
+            "project": "fake-project",
+            "branch": "main",
+            "job_name": "job2",
+            "pipeline": "fake-pipeline",
+            "result": "FAILURE",
+            "log_url": "fake-log-url",
+        }
+        # the file content matches with my-search2 and my-search3
+        self.fake_zuul.add_log_content(
+            build_two_build_and_log_matches["uuid"],
+            "job-output.txt",
+            "pattern2\n" "pattern3\n",
+        )
+
+        self.fake_zuul.set_builds(
+            [
+                build_dev_branch,
+                build_only_build_match,
+                build_two_build_matches_one_log_match,
+                build_two_build_and_log_matches,
+            ]
+        )
+
+        config = {
+            "searches": {
+                # will not match with build some due to build query some due
+                # to pattern
+                "my-search1": {
+                    "jobs": ["job1"],
+                    "branches": ["main"],
+                    "regex": "pattern1",
+                },
+                # there will be two hits for this search
+                "my-search2": {
+                    "jobs": ["job2"],
+                    "branches": ["main"],
+                    "regex": "pattern2",
+                },
+                # there will be one hit for this search
+                "my-search3": {
+                    "jobs": ["job2"],
+                    "branches": ["main"],
+                    "regex": "pattern3",
+                },
+            },
+        }
+        output = self._run_cli(
+            config=config,
+            args=[
+                "match",
+                "--result",
+                "FAILURE",
+            ],
+        )
+
+        # build_dev_branch
+        self.assertNotRegex(
+            output, "fake-uuid-dev: Search .* matched build query"
+        )
+
+        # build_only_build_match
+        self.assertRegex(
+            output, "fake-uuid1: Search my-search1 matched build query"
+        )
+        self.assertNotRegex(output, "fake-uuid1: Search .* matched signature!")
+
+        # build_two_build_matches_one_log_match
+        self.assertRegex(
+            output, "fake-uuid2: Search my-search2 matched build query"
+        )
+        self.assertRegex(
+            output, "fake-uuid2: Search my-search3 matched build query"
+        )
+        self.assertRegex(
+            output, "fake-uuid2: Search my-search2 matched signature!"
+        )
+        self.assertRegex(
+            output, "fake-uuid2:.*/fake-uuid2/job-output.txt:1:pattern2"
+        )
+        self.assertNotRegex(
+            output, "fake-uuid2: Search my-search3 matched signature!"
+        )
+
+        # build_two_build_and_log_matches
+        self.assertRegex(
+            output, "fake-uuid3: Search my-search2 matched build query"
+        )
+        self.assertRegex(
+            output, "fake-uuid3: Search my-search3 matched build query"
+        )
+        self.assertRegex(
+            output, "fake-uuid3: Search my-search2 matched signature!"
+        )
+        self.assertRegex(
+            output, "fake-uuid3:.*/fake-uuid3/job-output.txt:1:pattern2"
+        )
+        self.assertRegex(
+            output, "fake-uuid3: Search my-search3 matched signature!"
+        )
+        self.assertRegex(
+            output, "fake-uuid3:.*/fake-uuid3/job-output.txt:2:pattern3"
+        )
+
+        # my-search1 never matched to any signature
+        self.assertNotRegex(output, ".*: Search my-search1 matched signature!")
+
+        # assert the result table
+        self.assertRegex(output, r"fake-uuid-dev .* | \[\]")
+        self.assertRegex(output, r"fake-uuid1 .* | \[\]")
+        self.assertRegex(output, r"fake-uuid2 .* | \['my-search2'\]")
+        self.assertRegex(
+            output, r"fake-uuid3 .* | \['my-search2', 'my-search3'\]"
+        )
+
+        self.assertEqual(1, len(self.fake_zuul.list_build_calls))
+        self.assertEqual(
+            (
+                "openstack",
+                None,
+                None,
+                set(),
+                [],
+                "FAILURE",
+                None,
+                10,
+                None,
+                None,
+            ),
+            self.fake_zuul.list_build_calls[0],
+        )

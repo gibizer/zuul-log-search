@@ -9,6 +9,8 @@ from logsearch import config
 from logsearch import search
 from logsearch import zuul
 
+LOG = logging.getLogger(__name__)
+
 
 class BuildTable:
     def __init__(self, build):
@@ -92,6 +94,25 @@ class BuildsTable:
             t.add_row(row)
         t.align = "l"
         return t.__str__()
+
+
+class BuildsWithSignaturesTable(BuildsTable):
+    def __init__(
+        self,
+        builds: List[Dict],
+        args: config.Config,
+        build_uuids_to_search_names: Dict[str, List[str]],
+    ) -> None:
+        super(BuildsWithSignaturesTable, self).__init__(builds, args)
+        # extend the table with an extra column
+        self.FIELD_TO_COLUMN_NAMES["matching_searches"] = "matching searches"
+        # extend the builds with the extra field to show in that column
+        for build in builds:
+            build["matching_searches"] = build_uuids_to_search_names[
+                build["uuid"]
+            ]
+        # make the new column visible
+        self.extra_fields.append("matching_searches")
 
 
 class CmdException(Exception):
@@ -244,3 +265,93 @@ class StoredSearchCmd(LogSearchCmd):
             )
         )
         return self
+
+
+class MatchCmd(LogSearchCmd):
+    @staticmethod
+    def _build_satisfies_stored_search(
+        build: Dict, stored_search_config: config.PersistentSearch
+    ) -> bool:
+        return (
+            (
+                not stored_search_config.jobs
+                or build["job_name"] in stored_search_config.jobs
+            )
+            and (
+                not stored_search_config.project
+                or build["project"] == stored_search_config.project
+            )
+            and (
+                not stored_search_config.pipeline
+                or build["pipeline"] == stored_search_config.pipeline
+            )
+            and (
+                not stored_search_config.branches
+                or build["branch"] in stored_search_config.branches
+            )
+            and (
+                not stored_search_config.result
+                or build["result"] == stored_search_config.result
+            )
+            and (
+                stored_search_config.voting is None
+                or build["voting"] == stored_search_config.voting
+            )
+        )
+
+    def execute(self) -> None:
+        # intentionally not calling super().execute() as we need an extended
+        # logic but reusing pieces from the parent.
+        builds = self._get_builds()
+        print("Found builds to match:")
+        print(BuildsTable(builds, self.config))
+
+        build_uuid_to_stored_search_names = collections.defaultdict(list)
+        for build in builds:
+            print(f"Matching stored searches for build {build['uuid']}")
+            for (
+                name,
+                psearch,
+            ) in self.config.persistent_config.searches.items():
+                # 1) we have to check if the given build data satisfies the
+                # build query part of the stored search.
+                if not self._build_satisfies_stored_search(build, psearch):
+                    LOG.debug(f"{name} build query doesn't match. skip.")
+                    continue
+                print(f"{build['uuid']}: Search {name} matched build query.")
+
+                # 2) then we override the cli config with the given persistent
+                # search and download the logs based on the resulting query
+                # NOTE(gibi): applying the next persistent search simply remove
+                # removes the previously applied persistent search so we
+                # dont need a cleanup step at the end of the core of this loop.
+                self.config.apply_persistent_search_config(name)
+                (
+                    build_uuid_to_build,
+                    build_uuid_to_files,
+                ) = self._download_logs_for_builds([build])
+
+                # 3) then run the search in the logs and see if it results in
+                # any matching lines
+                matching_builds = self._search_logs(
+                    build_uuid_to_build, build_uuid_to_files, [build]
+                )
+
+                if matching_builds:
+                    print(f"{build['uuid']}: Search {name} matched signature!")
+                    build_uuid_to_stored_search_names[build["uuid"]].append(
+                        name
+                    )
+                else:
+                    print()
+            print()
+
+        # 4) print the collected results in a single table
+        # remove the last applied persistent search not to interfere with the
+        # columns in the result table
+        self.config.remove_applied_persistent_search_config()
+        print(
+            BuildsWithSignaturesTable(
+                builds, self.config, build_uuid_to_stored_search_names
+            )
+        )

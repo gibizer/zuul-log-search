@@ -19,11 +19,13 @@ class ArgHandler:
         build_show_handler,
         logsearch_handler,
         stored_search_handler,
+        match_handler,
     ) -> None:
         self.build_handler = build_handler
         self.build_show_handler = build_show_handler
         self.logsearch_handler = logsearch_handler
         self.stored_search_handler = stored_search_handler
+        self.match_handler = match_handler
 
     @staticmethod
     def _add_build_filter_args(arg_parser: argparse.ArgumentParser) -> None:
@@ -260,6 +262,16 @@ class ArgHandler:
             .execute()
         )
 
+        match_parser = subparsers.add_parser(
+            "match", help="Match builds with stored searches.\n\n"
+        )
+        self._add_build_filter_args(match_parser)
+        match_parser.set_defaults(
+            func=lambda args: self.match_handler(zuul.API(args.zuul_api_url))
+            .configure(args)
+            .execute()
+        )
+
         return arg_parser.parse_args(args=sys_args)
 
     def get_subcommand_handler(self, sys_args) -> Callable:
@@ -274,6 +286,7 @@ def main(args=tuple(sys.argv[1:])) -> None:
             build_show_handler=handlers.BuildShowCmd,
             logsearch_handler=handlers.LogSearchCmd,
             stored_search_handler=handlers.StoredSearchCmd,
+            match_handler=handlers.MatchCmd,
         )
         handler = arg_handler.get_subcommand_handler(args)
         handler()

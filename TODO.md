@@ -1,3 +1,4 @@
+To do:
 - [ ] Add cache size management 
 - [ ] Add test coverage
 - [ ] Run test in Travis CI
@@ -9,6 +10,7 @@
       could be based on exact date or number of days
 - [ ] add --print-signature flag to log subcommand to print out the stored
       search signature of the query so that can be easily copied to a file
+- [ ] Allow querying for multiple results e.g.: FAILURE and POST_FAILURE
 
 Done:
 - [x] Pre validate regex coming from the command line
@@ -26,3 +28,5 @@ Done:
   by name. Similarly, how elastic re-check signature works.
 - [x] Move all the args access to the Config object
 - [x] Support job groups in stored search
+- [x] Add ``match`` subcommand that allows querying builds, and then tries to
+  match them against stored searches
