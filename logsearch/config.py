@@ -16,6 +16,8 @@ class ConfigError(BaseException):
 class PersistentConfig:
     """Configuration read and merged from multiple config files"""
 
+    CONFIG_FILE_EXTENSIONS = [".conf", ".yaml"]
+
     def __init__(self, config_dir):
         self._job_groups: Dict[str, List[str]] = {}
         self._searches: Dict[str, Dict] = {}
@@ -24,12 +26,15 @@ class PersistentConfig:
     def _init_from_dir(self, config_dir):
         for current_dir, _, files in os.walk(config_dir):
             for file in files:
-                file = os.path.join(current_dir, file)
-                LOG.debug(f"Reading config file {file}")
-                with open(file) as f:
-                    config_dict = yaml.safe_load(f)
-                    if config_dict:
-                        self._init_from_config_dict(config_dict)
+                if any(
+                    file.endswith(ext) for ext in self.CONFIG_FILE_EXTENSIONS
+                ):
+                    file = os.path.join(current_dir, file)
+                    LOG.debug(f"Reading config file {file}")
+                    with open(file) as f:
+                        config_dict = yaml.safe_load(f)
+                        if config_dict:
+                            self._init_from_config_dict(config_dict)
 
     def _init_from_config_dict(self, config_dict: dict) -> None:
         # if there is a key conflict between multiple files then we simply

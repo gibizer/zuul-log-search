@@ -3,7 +3,7 @@ import io
 import os
 import sys
 import tempfile
-from typing import Generator, Dict, List, Union, Tuple, Iterable
+from typing import Generator, Dict, Iterable
 import unittest
 from unittest import mock
 import yaml
@@ -217,6 +217,64 @@ class TestBuildList(TestBase):
             "The requested job group b-group is not defined in the config "
             "files.\n",
             output,
+        )
+
+    @mock.patch("logsearch.zuul.API.list_builds")
+    def test_with_multiple_config_files(self, mock_zuul_list_builds):
+        mock_zuul_list_builds.return_value = [self.build1]
+        config1 = {
+            "job-groups": {
+                "a-group": ["job1", "job2"],
+                "c-group": ["job4"],
+            }
+        }
+        config2 = {
+            "job-groups": {
+                "b-group": ["job2", "job3"],
+            }
+        }
+        config3 = {
+            "job-groups": {
+                "b-group": ["should not read this config"],
+            }
+        }
+        with collect_stdout() as stdout:
+            with tempfile.TemporaryDirectory() as config_dir:
+                with open(os.path.join(config_dir, "config1.yaml"), "w") as f:
+                    yaml.dump(config1, f)
+                with open(os.path.join(config_dir, "config2.conf"), "w") as f:
+                    yaml.dump(config2, f)
+                # this file should be ignored as it does not have yaml or conf
+                # extension
+                with open(os.path.join(config_dir, "config3.bak"), "w") as f:
+                    yaml.dump(config3, f)
+                with tempfile.TemporaryDirectory() as cache_dir:
+                    main.main(
+                        args=[
+                            "--config-dir",
+                            config_dir,
+                            "--log-store-dir",
+                            cache_dir,
+                            "build",
+                            "--job-group",
+                            "a-group",
+                            "--job-group",
+                            "b-group",
+                        ]
+                    )
+        output = stdout.getvalue()
+
+        self.assertIn("fake-uuid", output)
+        self.assertIn("fake-url", output)
+        mock_zuul_list_builds.assert_called_once_with(
+            "openstack",
+            None,
+            None,
+            {"job1", "job2", "job3"},
+            [],
+            None,
+            None,
+            10,
         )
 
 

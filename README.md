@@ -127,9 +127,9 @@ Configuration
 =============
 The ``logsearch.conf.d`` directory is searched for config files. The directory
 location can be also provided via ``--config-dir`` command line parameter.
-Every file is read from the directory as yaml data and the configurations are
-merged. So you can separate out different part of the configuration to
-different files.
+Every file with names ending in ``.yaml`` or ``.conf`` is read from the
+directory as yaml data and the data are merged by the top level key.
+So you can separate out different part of the configuration to different files.
 
 Job groups
 ----------
