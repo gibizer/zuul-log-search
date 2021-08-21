@@ -92,7 +92,16 @@ class TestBuildList(TestBase):
         self.assertIn("fake-uuid", output)
         self.assertIn("fake-url", output)
         mock_zuul_list_builds.assert_called_once_with(
-            "openstack", None, None, set(), [], None, None, 10, None
+            "openstack",
+            None,
+            None,
+            set(),
+            [],
+            None,
+            None,
+            10,
+            None,
+            None,
         )
 
     @mock.patch("logsearch.zuul.API.list_builds")
@@ -106,7 +115,16 @@ class TestBuildList(TestBase):
         self.assertIn("fake-uuid2", output)
         self.assertIn("fake-url2", output)
         mock_zuul_list_builds.assert_called_once_with(
-            "openstack", None, None, set(), [], None, None, 10, None
+            "openstack",
+            None,
+            None,
+            set(),
+            [],
+            None,
+            None,
+            10,
+            None,
+            None,
         )
 
     @mock.patch("logsearch.zuul.API.list_builds")
@@ -135,11 +153,15 @@ class TestBuildList(TestBase):
                 "3",
                 "--review",
                 "800087",
+                "--patchset",
+                "3",
             ]
         )
 
         self.assertIn("fake-uuid", output)
-        self.assertIn("fake-url", output)
+        self.assertIn("fake-date", output)
+        self.assertIn("fake-job", output)
+        self.assertIn("fake-branch", output)
         mock_zuul_list_builds.assert_called_once_with(
             "openstack",
             "nova",
@@ -148,8 +170,9 @@ class TestBuildList(TestBase):
             ["master", "stable/wallaby"],
             "FAILURE",
             True,
-            3,
+            pow(10, 10),
             800087,
+            3,
         )
 
     @mock.patch("logsearch.zuul.API.list_builds")
@@ -162,7 +185,16 @@ class TestBuildList(TestBase):
 
         self.assertIn("Cannot access Zuul", output)
         mock_zuul_list_builds.assert_called_once_with(
-            "openstack", None, None, set(), [], None, None, 10, None
+            "openstack",
+            None,
+            None,
+            set(),
+            [],
+            None,
+            None,
+            10,
+            None,
+            None,
         )
 
     @mock.patch("logsearch.zuul.API.list_builds")
@@ -199,6 +231,7 @@ class TestBuildList(TestBase):
             None,
             None,
             10,
+            None,
             None,
         )
 
@@ -280,6 +313,41 @@ class TestBuildList(TestBase):
             None,
             10,
             None,
+            None,
+        )
+
+    def test_patchset_without_review_error(self):
+        output = self._run_cli(args=["build", "--patchset", "1"])
+        self.assertIn(
+            "The patchset parameter is only valid if the review parameters "
+            "is also provided.",
+            output,
+        )
+
+    @mock.patch("logsearch.zuul.API.list_builds")
+    def test_review_and_patchset_makes_unlimited(self, mock_zuul_list_builds):
+        self._run_cli(
+            args=[
+                "build",
+                "--review",
+                "80086",
+                "--patchset",
+                "13",
+                "--limit",
+                "1",
+            ]
+        )
+        mock_zuul_list_builds.assert_called_once_with(
+            "openstack",
+            None,
+            None,
+            set(),
+            [],
+            None,
+            None,
+            pow(10, 10),
+            80086,
+            13,
         )
 
 
@@ -560,7 +628,7 @@ class TestLogSearch(TestBase):
         self.assertEqual(1, len(self.fake_zuul.list_build_calls))
         # tenant and limit are defaulted
         self.assertEqual(
-            ("openstack", None, None, set(), [], None, None, 10, None),
+            ("openstack", None, None, set(), [], None, None, 10, None, None),
             self.fake_zuul.list_build_calls[0],
         )
 
@@ -617,6 +685,7 @@ class TestLogSearch(TestBase):
                 None,
                 True,
                 11,
+                None,
                 None,
             ),
             self.fake_zuul.list_build_calls[0],
@@ -693,6 +762,7 @@ class TestLogSearch(TestBase):
                 None,
                 13,
                 None,
+                None,
             ),
             self.fake_zuul.list_build_calls[0],
         )
@@ -746,6 +816,7 @@ class TestLogSearch(TestBase):
                 None,
                 None,
                 10,
+                None,
                 None,
             ),
             self.fake_zuul.list_build_calls[0],
@@ -803,6 +874,7 @@ class TestLogSearch(TestBase):
                 None,
                 None,
                 10,
+                None,
                 None,
             ),
             self.fake_zuul.list_build_calls[0],

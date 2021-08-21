@@ -39,9 +39,10 @@ class BuildsTable:
     ARG_TO_FIELD_NAMES = {
         "jobs": "job_name",
         "branches": "branch",
+        "review_id": "ref_url",
     }
 
-    DEFAULT_FIELDS = ["uuid", "end_time", "ref_url"]
+    DEFAULT_FIELDS = ["uuid", "end_time"]
     FIELD_TO_COLUMN_NAMES = {
         "ref_url": "review",
         "end_time": "finished",
@@ -66,7 +67,7 @@ class BuildsTable:
         filtering or filtering for multiple values.
         """
         fields = []
-        for arg_name in ["project", "pipeline", "result"]:
+        for arg_name in ["project", "pipeline", "result", "review_id"]:
             if getattr(args, arg_name) is None:
                 fields.append(self.ARG_TO_FIELD_NAMES.get(arg_name, arg_name))
 
@@ -144,6 +145,7 @@ class BuildCmd(Cmd):
             self.config.voting,
             self.config.limit,
             self.config.review_id,
+            self.config.patchset,
         )
         print(BuildsTable(builds, self.config))
 
@@ -198,6 +200,7 @@ class LogSearchCmd(Cmd):
             self.config.voting,
             self.config.limit,
             self.config.review_id,
+            self.config.patchset,
         )
         return builds
 

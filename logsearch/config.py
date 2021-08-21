@@ -189,6 +189,17 @@ class Config:
             if not self._args.files:
                 self._args.files = {"job-output.txt"}
 
+        if "patchset" in self._args and self._args.patchset:
+            if "review_id" not in self._args or not self._args.review_id:
+                raise ConfigError(
+                    "The patchset parameter is only valid if the review "
+                    "parameters is also provided."
+                )
+            # we want to ignore --limit as --patchset and --review already
+            # limits the query but zuul API applies a default limit so we need
+            # so set a high number here to not get limited by that.
+            self._args.limit = pow(10, 10)
+
         # A persistent search is requested so we need to load the search
         # config from there.
         if "search" in self._args:
@@ -280,3 +291,7 @@ class Config:
     @property
     def review_id(self) -> int:
         return self._args.review_id
+
+    @property
+    def patchset(self) -> int:
+        return self._args.patchset

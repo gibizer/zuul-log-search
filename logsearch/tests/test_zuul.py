@@ -26,6 +26,7 @@ class TestZuulAPI(unittest.TestCase):
             limit=None,
             voting=None,
             change=None,
+            patchset=None,
         )
 
         self.assertEqual(mock.sentinel.json_rsp, result)
@@ -57,6 +58,7 @@ class TestZuulAPI(unittest.TestCase):
             limit=10,
             voting=True,
             change=803082,
+            patchset=2,
         )
 
         mock_get.assert_called_once_with(
@@ -70,6 +72,7 @@ class TestZuulAPI(unittest.TestCase):
                 "voting": "1",
                 "limit": 10,
                 "change": 803082,
+                "patchset": 2,
             },
         )
         mock_rsp.json.assert_called_once_with()

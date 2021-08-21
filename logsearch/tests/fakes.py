@@ -44,6 +44,7 @@ class FakeZuul(zuul.API):
         voting: Optional[bool],
         limit: Optional[int],
         change: Optional[int],
+        patchset: Optional[int],
     ) -> List[Dict]:
         self.list_build_calls.append(
             (
@@ -56,6 +57,7 @@ class FakeZuul(zuul.API):
                 voting,
                 limit,
                 change,
+                patchset,
             )
         )
         return self.builds

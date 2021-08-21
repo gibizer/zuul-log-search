@@ -100,6 +100,13 @@ class ArgHandler:
             dest="review_id",
             help="The number from the gerrit URL of a review.",
         )
+        arg_parser.add_argument(
+            "--patchset",
+            type=int,
+            dest="patchset",
+            help="The patchset number. Only valid if --review is also used "
+            "and makes --limit ignored.",
+        )
 
     def _add_logsearch_filter_args(
         self, argparser: argparse.ArgumentParser

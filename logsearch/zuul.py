@@ -44,6 +44,7 @@ class API:
         voting: Optional[bool],
         limit: Optional[int],
         change: Optional[int],
+        patchset: Optional[int],
     ) -> List[Dict]:
         params: Dict = {}
         if project is not None:
@@ -60,6 +61,8 @@ class API:
             params["limit"] = limit
         if change is not None:
             params["change"] = change
+        if patchset is not None:
+            params["patchset"] = patchset
 
         try:
             r = requests.get(
