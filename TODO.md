@@ -5,6 +5,10 @@
 - [ ] Support multi line regex
 - [ ] Make the output format of the log subcommand configurable. E.g. full,
   only-matched-lines
+- [ ] support build filter --since
+      could be based on exact date or number of days
+- [ ] add --print-signature flag to log subcommand to print out the stored
+      search signature of the query so that can be easily copied to a file
 
 Done:
 - [x] Pre validate regex coming from the command line
