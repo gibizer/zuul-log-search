@@ -123,26 +123,11 @@ Note that this command download the logfile to the local cache directory so
 this might take a while. However, repeated searches in the same logs will use
 the local cache.
 
-Configuration
-=============
-The ``logsearch.conf.d`` directory is searched for config files. The directory
-location can be also provided via ``--config-dir`` command line parameter.
-Every file with names ending in ``.yaml`` or ``.conf`` is read from the
-directory as yaml data and the data are merged by the top level key.
-So you can separate out different part of the configuration to different files.
-
-Job groups
-----------
-Instead of listing multiple ``--job`` parameters in the command line you can
-define job groups in the configuration assigning an alias for a list of jobs
-and then you can use the ``--job-group`` parameter to refer to the list of job
-with the alias. See [example](.logsearch.conf.d/conf_sample.conf).
-
 Stored searches
 ---------------
-If you have searches that you want to run regularly you can define it in the
+If you have searches that you want to run regularly you can define it in a
 configuration file with an alias and then use the ``storedsearch`` command in
-the command line to invoke the stored query.  See
+the command line to invoke the stored query. See
 [example](.logsearch.conf.d/conf_sample.conf).
 
 When running stored searches you can fine tune the query with same CLI
@@ -209,3 +194,18 @@ $ logsearch match --job-group nova-devstack --project openstack/nova --branch ma
 | 806b1a4ad1fc4d1cb78bf55644d13781 | 2021-08-06T14:05:53 | https://review.opendev.org/801714 | nova-multi-cell            | ['bug-xxx-virtual-interface-creation-timeout']                                                              |
 +----------------------------------+---------------------+-----------------------------------+----------------------------+-------------------------------------------------------------------------------------------------------------+
 ```
+
+Configuration
+=============
+The ``logsearch.conf.d`` directory is searched for config files. The directory
+location can be also provided via ``--config-dir`` command line parameter.
+Every file with names ending in ``.yaml`` or ``.conf`` is read from the
+directory as yaml data and the data are merged by the top level key.
+So you can separate out different part of the configuration to different files.
+
+Job groups
+----------
+Instead of listing multiple ``--job`` parameters in the command line you can
+define job groups in the configuration assigning an alias for a list of jobs
+and then you can use the ``--job-group`` parameter to refer to the list of job
+with the alias. See [example](.logsearch.conf.d/conf_sample.conf).
