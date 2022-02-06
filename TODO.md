@@ -10,7 +10,16 @@ To do:
       could be based on exact date or number of days
 - [ ] add --print-signature flag to log subcommand to print out the stored
       search signature of the query so that can be easily copied to a file
-- [ ] Allow querying for multiple results e.g.: FAILURE and POST_FAILURE
+- [ ] Allow querying for multiple results e.g.: FAILURE or POST_FAILURE
+- [ ] Generate zuul build url from uuid e.g.: https://zuul.opendev.org/t/openstack/build/d9fa8d2446cb4e4fb224ff5340fd3241
+- [ ] storeadsearch ignores subdir under configdir today. This is good and bad
+      Accept subdir prefixed stored search name
+      Accept filename instead of stored search name from the file
+- [ ] ? ability to match for test case failed / passed
+- [ ] revamp cache dir handling. Change the default to i.e. ~/.cache
+- [ ] revamp config dir handling. Read them from different places in a 
+      meaningful order. I.e. pwd then if that not exists then ~/.cache
+- [ ] Add new limiting options for queries, like --days-ago 7
 
 Done:
 - [x] Pre validate regex coming from the command line
