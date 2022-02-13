@@ -20,37 +20,35 @@ $ pip install git+http://github.com/gibizer/zuul-log-search
 Usage
 =====
 
-You can either search for builds or search in the logs of such builds.
+You can search for builds, search in the logs of such builds, or try to
+classify builds by matching them to predefined searches.
 
 ```shell
-$ logseach --help
 usage: Search Zuul CI results
 
 positional arguments:
-  {build-show,build,log,storedsearch}
+  {build-show,build,log,storedsearch,match}
     build-show          Show the metadata of a specific build
     build               Search for builds
     log                 Search the logs of the builds
-    storedsearch        Run a search defined in the configuration.
-                        The command line args can be used to fine tune the
-                        stored search where the configuration does not specify
-                        a given parameter. If a parameter is specified by the
-                        stored search then the corresponding command line
-                        parameter will be ignored.
+    storedsearch        Run a search defined in the configuration. The command
+                        line args can be used to fine tune the stored search
+                        where the configuration does not specify a given
+                        parameter. If a parameter is specified by the stored
+                        search then the corresponding command line parameter
+                        will be ignored.
+    match               Match builds with stored searches.
 
 optional arguments:
   -h, --help            show this help message and exit
   --debug               Print debug logs
   --zuul-api-url ZUUL_API_URL
-                        The API url of the Zuul deployment to use.
-                        Defaulted to the OpenDev Zuul (https://zuul.opendev.org/api)
+                        The API url of the Zuul deployment to use. Defaulted to the OpenDev Zuul (https://zuul.opendev.org/api)
   --log-store-dir LOG_STORE_DIR
-                        The local directory to download the logs to.
-                        Defaulted to .logsearch/
+                        The local directory to download the logs to. Defaulted to .logsearch/
   --config-dir CONFIG_DIR
                         The local directory storing config files and stored queries. Defaulted to .logsearch.conf.d/
-  --tenant TENANT       The name of the tenant in the Zuul installation.
-                        Defaulted to 'openstack'
+  --tenant TENANT       The name of the tenant in the Zuul installation. Defaulted to 'openstack'
 ```
 
 Searching for builds
@@ -74,6 +72,17 @@ $ logsearch build --project openstack/nova --branch master --result FAILURE --vo
 | 24ff9f3f4d124a989bd895f48a4b8cc9 | 2021-05-29T04:34:26 | nova-next                   | FAILURE | https://review.opendev.org/786348 |
 +----------------------------------+---------------------+-----------------------------+---------+-----------------------------------+
 ```
+
+Filtering builds
+----------------
+You can filter the builds from many aspects: project, branch, job name, result,
+pipeline, voting status or review ID and patch set number.
+
+You can limit the search result by the number of builds using the ``--limit``
+parameter or by number of days since the build's start date using the
+``--days`` parameter.
+
+See ``logsearch build --help`` for details.
 
 Searching in the logs of the builds
 -----------------------------------
@@ -205,7 +214,8 @@ So you can separate out different part of the configuration to different files.
 
 Job groups
 ----------
-Instead of listing multiple ``--job`` parameters in the command line you can
-define job groups in the configuration assigning an alias for a list of jobs
-and then you can use the ``--job-group`` parameter to refer to the list of job
-with the alias. See [example](.logsearch.conf.d/conf_sample.conf).
+Instead of listing multiple ``--job`` parameters in the command line to filter
+for multiple jobs you can define job groups in the configuration assigning an
+alias for a list of jobs and then you can use the ``--job-group`` parameter to
+refer to the list of jobs with the alias.
+See [example](.logsearch.conf.d/conf_sample.conf).

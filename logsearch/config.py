@@ -121,6 +121,10 @@ class PersistentSearch:
         return self._search.get("limit")
 
     @property
+    def days_ago(self) -> Optional[int]:
+        return self._search.get("days_ago")
+
+    @property
     def regex(self) -> str:
         if "regex" not in self._search:
             raise ConfigError(
@@ -309,3 +313,7 @@ class Config:
     @property
     def persistent_config(self) -> PersistentConfig:
         return self._config
+
+    @property
+    def days_ago(self) -> int:
+        return self._args.days_ago

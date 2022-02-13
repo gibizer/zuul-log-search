@@ -1,4 +1,6 @@
+import datetime
 import logging
+import math
 from typing import List, Dict, Optional, Set
 import os
 
@@ -12,6 +14,10 @@ class ZuulException(BaseException):
 
 
 class API:
+
+    # 2022-02-06T12:21:04
+    DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
+
     def __init__(self, zuul_url: str) -> None:
         self.zuul_url = zuul_url
 
@@ -35,7 +41,7 @@ class API:
 
     def list_builds(
         self,
-        tenant,
+        tenant: str,
         project: Optional[str],
         pipeline: Optional[str],
         jobs: Set[str],
@@ -45,6 +51,7 @@ class API:
         limit: Optional[int],
         change: Optional[int],
         patchset: Optional[int],
+        days_ago: Optional[int],
     ) -> List[Dict]:
         params: Dict = {}
         if project is not None:
@@ -64,6 +71,60 @@ class API:
         if patchset is not None:
             params["patchset"] = patchset
 
+        if days_ago is None:
+            return self.call_zuul(tenant, params)
+
+        # days-ago type query is not supported by zuul out of the box.
+        # So we simulate that here with multiple queries to find the proper
+        # limit that match the requested date.
+        return self.call_zuul_with_days_ago(tenant, params, days_ago)
+
+    def _get_build_start_date(self, build: dict):
+        return datetime.datetime.strptime(
+            build["start_time"], self.DATETIME_FORMAT
+        )
+
+    def _now(self):
+        # needs to wrap it, so we can mock in during test
+        return datetime.datetime.now()
+
+    def call_zuul_with_days_ago(
+        self, tenant: str, params: dict, days_ago: int
+    ) -> List[Dict]:
+        one_day_in_sec = datetime.timedelta(days=1).total_seconds()
+        now = self._now()
+        target_start_date = now - datetime.timedelta(days=days_ago)
+
+        while True:
+            # we assume that the list is ordered by start_time by the API,
+            # so the earliest build is the last
+            builds = self.call_zuul(tenant, params)
+            earliest_build = builds[-1]
+            earliest_date = self._get_build_start_date(earliest_build)
+            time_window = (
+                now - earliest_date
+            ).total_seconds() / one_day_in_sec
+
+            if time_window < days_ago:
+                # we need from zuul
+                params["limit"] = math.ceil(
+                    days_ago / time_window * params["limit"]
+                )
+            else:
+                # we have more we need
+                break
+
+        # so we have more than enough builds lets collect the not too old
+        # builds
+        builds = [
+            build
+            for build in builds
+            if self._get_build_start_date(build) >= target_start_date
+        ]
+
+        return builds
+
+    def call_zuul(self, tenant: str, params: dict) -> List[Dict]:
         try:
             r = requests.get(
                 self.zuul_url + f"/tenant/{tenant}/builds", params=params

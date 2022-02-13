@@ -102,6 +102,7 @@ class TestBuildList(TestBase):
             10,
             None,
             None,
+            None,
         )
 
     @mock.patch("logsearch.zuul.API.list_builds")
@@ -123,6 +124,7 @@ class TestBuildList(TestBase):
             None,
             None,
             10,
+            None,
             None,
             None,
         )
@@ -173,6 +175,7 @@ class TestBuildList(TestBase):
             pow(10, 10),
             800087,
             3,
+            None,
         )
 
     @mock.patch("logsearch.zuul.API.list_builds")
@@ -193,6 +196,7 @@ class TestBuildList(TestBase):
             None,
             None,
             10,
+            None,
             None,
             None,
         )
@@ -231,6 +235,7 @@ class TestBuildList(TestBase):
             None,
             None,
             10,
+            None,
             None,
             None,
         )
@@ -314,6 +319,7 @@ class TestBuildList(TestBase):
             10,
             None,
             None,
+            None,
         )
 
     def test_patchset_without_review_error(self):
@@ -348,6 +354,7 @@ class TestBuildList(TestBase):
             pow(10, 10),
             80086,
             13,
+            None,
         )
 
 
@@ -628,7 +635,19 @@ class TestLogSearch(TestBase):
         self.assertEqual(1, len(self.fake_zuul.list_build_calls))
         # tenant and limit are defaulted
         self.assertEqual(
-            ("openstack", None, None, set(), [], None, None, 10, None, None),
+            (
+                "openstack",
+                None,
+                None,
+                set(),
+                [],
+                None,
+                None,
+                10,
+                None,
+                None,
+                None,
+            ),
             self.fake_zuul.list_build_calls[0],
         )
 
@@ -687,6 +706,7 @@ class TestLogSearch(TestBase):
                 11,
                 None,
                 None,
+                None,
             ),
             self.fake_zuul.list_build_calls[0],
         )
@@ -723,6 +743,12 @@ class TestLogSearch(TestBase):
                 # in the invocation
                 "--limit",
                 "13",
+                # not defined in the config so it can be defined in the cli
+                # Note that in general --limit and --days should not be mixed
+                # but in this test the Zuul logic is mocked so we can easily
+                # test that both param can be overridden on the CLI
+                "--days",
+                "3",
                 # also not defined in the config so it can be
                 # defined here
                 "--job-group",
@@ -763,6 +789,7 @@ class TestLogSearch(TestBase):
                 13,
                 None,
                 None,
+                3,
             ),
             self.fake_zuul.list_build_calls[0],
         )
@@ -816,6 +843,7 @@ class TestLogSearch(TestBase):
                 None,
                 None,
                 10,
+                None,
                 None,
                 None,
             ),
@@ -874,6 +902,7 @@ class TestLogSearch(TestBase):
                 None,
                 None,
                 10,
+                None,
                 None,
                 None,
             ),
@@ -1076,6 +1105,7 @@ class TestLogSearch(TestBase):
                 "FAILURE",
                 None,
                 10,
+                None,
                 None,
                 None,
             ),

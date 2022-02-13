@@ -6,8 +6,6 @@ To do:
 - [ ] Support multi line regex
 - [ ] Make the output format of the log subcommand configurable. E.g. full,
   only-matched-lines
-- [ ] support build filter --since
-      could be based on exact date or number of days
 - [ ] add --print-signature flag to log subcommand to print out the stored
       search signature of the query so that can be easily copied to a file
 - [ ] Allow querying for multiple results e.g.: FAILURE or POST_FAILURE
@@ -19,7 +17,6 @@ To do:
 - [ ] revamp cache dir handling. Change the default to i.e. ~/.cache
 - [ ] revamp config dir handling. Read them from different places in a 
       meaningful order. I.e. pwd then if that not exists then ~/.cache
-- [ ] Add new limiting options for queries, like --days-ago 7
 
 Done:
 - [x] Pre validate regex coming from the command line
@@ -39,3 +36,4 @@ Done:
 - [x] Support job groups in stored search
 - [x] Add ``match`` subcommand that allows querying builds, and then tries to
   match them against stored searches
+- [x] Add new limiting options for queries, like --days-ago 7

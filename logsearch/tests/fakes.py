@@ -45,6 +45,7 @@ class FakeZuul(zuul.API):
         limit: Optional[int],
         change: Optional[int],
         patchset: Optional[int],
+        days_ago: Optional[int],
     ) -> List[Dict]:
         self.list_build_calls.append(
             (
@@ -58,6 +59,7 @@ class FakeZuul(zuul.API):
                 limit,
                 change,
                 patchset,
+                days_ago,
             )
         )
         return self.builds

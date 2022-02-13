@@ -167,6 +167,7 @@ class BuildCmd(Cmd):
             self.config.limit,
             self.config.review_id,
             self.config.patchset,
+            self.config.days_ago,
         )
         print(BuildsTable(builds, self.config))
 
@@ -222,6 +223,7 @@ class LogSearchCmd(Cmd):
             self.config.limit,
             self.config.review_id,
             self.config.patchset,
+            self.config.days_ago,
         )
         return builds
 

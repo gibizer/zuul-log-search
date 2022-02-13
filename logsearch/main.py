@@ -109,6 +109,14 @@ class ArgHandler:
             help="The patchset number. Only valid if --review is also used "
             "and makes --limit ignored.",
         )
+        arg_parser.add_argument(
+            "--days",
+            type=int,
+            default=None,
+            dest="days_ago",
+            help="It limits the result to the last N days of builds. If "
+            "provided it makes --limit ignored.",
+        )
 
     def _add_logsearch_filter_args(
         self, argparser: argparse.ArgumentParser
