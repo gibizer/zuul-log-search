@@ -95,21 +95,33 @@ class API:
         now = self._now()
         target_start_date = now - datetime.timedelta(days=days_ago)
 
+        original_limit = params.get("limit", 10)
+
         while True:
             # we assume that the list is ordered by start_time by the API,
             # so the earliest build is the last
             builds = self.call_zuul(tenant, params)
             earliest_build = builds[-1]
             earliest_date = self._get_build_start_date(earliest_build)
+            # it is the number of days we see in the current set of builds
             time_window = (
                 now - earliest_date
             ).total_seconds() / one_day_in_sec
 
             if time_window < days_ago:
-                # we need from zuul
-                params["limit"] = math.ceil(
-                    days_ago / time_window * params["limit"]
-                )
+                # we need from builds from zuul
+
+                # This is our heuristic of the number of builds in the
+                # requested time window.
+                new_limit = math.ceil(days_ago / time_window * params["limit"])
+
+                # Avoid too small steps towards the target limit when we are
+                # close. It is better to overestimate the limit and then filter
+                # too old results locally than underestimate and take an
+                # excessive amount of Zuul queries with slowly increasing
+                # limits.
+                increase = max(original_limit, new_limit - params["limit"])
+                params["limit"] += increase
             else:
                 # we have more we need
                 break
