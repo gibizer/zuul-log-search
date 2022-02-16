@@ -6,6 +6,8 @@ import os
 
 import requests
 
+from logsearch import constants
+
 LOG = logging.getLogger(__name__)
 
 
@@ -14,10 +16,6 @@ class ZuulException(BaseException):
 
 
 class API:
-
-    # 2022-02-06T12:21:04
-    DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
-
     def __init__(self, zuul_url: str) -> None:
         self.zuul_url = zuul_url
 
@@ -81,7 +79,7 @@ class API:
 
     def _get_build_start_date(self, build: dict):
         return datetime.datetime.strptime(
-            build["start_time"], self.DATETIME_FORMAT
+            build["start_time"], constants.DATETIME_FORMAT
         )
 
     def _now(self):

@@ -20,12 +20,14 @@ class ArgHandler:
         logsearch_handler,
         stored_search_handler,
         match_handler,
+        cache_show_handler,
     ) -> None:
         self.build_handler = build_handler
         self.build_show_handler = build_show_handler
         self.logsearch_handler = logsearch_handler
         self.stored_search_handler = stored_search_handler
         self.match_handler = match_handler
+        self.cache_show_handler = cache_show_handler
 
     @staticmethod
     def _add_build_filter_args(arg_parser: argparse.ArgumentParser) -> None:
@@ -280,6 +282,17 @@ class ArgHandler:
             .execute()
         )
 
+        cache_show_parser = subparsers.add_parser(
+            "cache-show", help="Show information of the local build cache.\n\n"
+        )
+        cache_show_parser.set_defaults(
+            func=lambda args: self.cache_show_handler(
+                zuul.API(args.zuul_api_url)
+            )
+            .configure(args)
+            .execute()
+        )
+
         return arg_parser.parse_args(args=sys_args)
 
     def get_subcommand_handler(self, sys_args) -> Callable:
@@ -295,6 +308,7 @@ def main(args=tuple(sys.argv[1:])) -> None:
             logsearch_handler=handlers.LogSearchCmd,
             stored_search_handler=handlers.StoredSearchCmd,
             match_handler=handlers.MatchCmd,
+            cache_show_handler=handlers.CacheShowCmd,
         )
         handler = arg_handler.get_subcommand_handler(args)
         handler()

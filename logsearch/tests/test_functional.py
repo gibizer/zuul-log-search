@@ -41,6 +41,7 @@ class TestBase(unittest.TestCase):
             "uuid": "fake-uuid",
             "ref_url": "fake-url",
             "patchset": "1",
+            "start_time": "2022-02-09T16:57:33",
             "end_time": "fake-date",
             "project": "fake-project",
             "branch": "fake-branch",
@@ -53,6 +54,7 @@ class TestBase(unittest.TestCase):
             "uuid": "fake-uuid2",
             "ref_url": "fake-url2",
             "patchset": "3",
+            "start_time": "2022-02-10T19:35:39",
             "end_time": "fake-date",
             "project": "fake-project",
             "branch": "fake-branch",
@@ -63,10 +65,19 @@ class TestBase(unittest.TestCase):
         }
 
     @staticmethod
-    def _run_cli(config: Dict = None, args: Iterable[str] = ()) -> str:
+    def _run_cli(
+        config: Dict = None,
+        args: Iterable[str] = (),
+        cache_dir: str = None,
+    ) -> str:
         with collect_stdout() as stdout:
             with test_config(config or {}) as config_dir:
-                with tempfile.TemporaryDirectory() as cache_dir:
+                with contextlib.ExitStack() as stack:
+                    if not cache_dir:
+                        cache_dir = stack.enter_context(
+                            tempfile.TemporaryDirectory()
+                        )
+
                     main.main(
                         args=[
                             "--config-dir",
@@ -1111,3 +1122,59 @@ class TestLogSearch(TestBase):
             ),
             self.fake_zuul.list_build_calls[0],
         )
+
+
+class TestCacheShow(TestBase):
+    def test_empty_cache(self):
+        output = self._run_cli(args=("cache-show",))
+
+        self.assertRegex(output, r"Disk size.*| 0.00 B")
+        self.assertRegex(output, r"Number of builds.*| 0")
+        self.assertRegex(output, r"Number of logfiles.*| 0")
+        self.assertRegex(output, r"Oldest build.*| ")
+
+    def test_cache_stats(self):
+        patcher = mock.patch("logsearch.zuul.API")
+        self.addCleanup(patcher.stop)
+        mock_zuul = patcher.start()
+        fake_zuul = fakes.FakeZuul()
+        mock_zuul.return_value = fake_zuul
+
+        fake_zuul.set_builds([self.build1, self.build2])
+        fake_zuul.add_log_content(
+            self.build1["uuid"],
+            "job-output.txt",
+            "foo\n"
+            "... some-pattern and bar\n"
+            "baz\n"
+            "another some-pattern instance\n",
+        )
+        fake_zuul.add_log_content(self.build1["uuid"], "other-file", "foo")
+        fake_zuul.add_log_content(
+            self.build2["uuid"], "job-output.txt", "nothingness\n"
+        )
+        fake_zuul.add_log_content(
+            self.build2["uuid"], "other-file", "some-pattern\n"
+        )
+
+        with tempfile.TemporaryDirectory() as cache_dir:
+            # run a log search to have things in the cache
+            self._run_cli(
+                cache_dir=cache_dir,
+                args=[
+                    "log",
+                    "--file",
+                    "job-output.txt",
+                    "--file",
+                    "other-file",
+                    "pattern",
+                ],
+            )
+
+            # check the stats of the cache
+            output = self._run_cli(cache_dir=cache_dir, args=("cache-show",))
+
+            self.assertRegex(output, r"Disk size.*| 653.00 B")
+            self.assertRegex(output, r"Number of builds.*| 2")
+            self.assertRegex(output, r"Number of logfiles.*| 4")
+            self.assertRegex(output, r"Oldest build.*| 2022-02-09 16:57:33")

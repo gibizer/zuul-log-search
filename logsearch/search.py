@@ -1,4 +1,6 @@
 import contextlib
+import dataclasses
+import datetime
 import json
 import logging
 import os
@@ -8,6 +10,7 @@ import requests.exceptions
 import ripgrepy  # type: ignore
 
 from logsearch import zuul
+from logsearch import constants
 
 
 LOG = logging.getLogger(__name__)
@@ -67,6 +70,51 @@ class BuildLogCache:
         with open(path, "r") as f:
             build = json.load(f)
         return build
+
+    @dataclasses.dataclass
+    class Stats:
+        oldest_build: datetime.datetime = datetime.datetime.now()
+        size: int = 0
+        builds: int = 0
+        logfiles: int = 0
+
+        @classmethod
+        def collect(cls, cache_dir) -> "BuildLogCache.Stats":
+            stats = cls()
+            # the first level is one directory per build
+            with os.scandir(cache_dir) as it:
+                for build_dir in it:
+                    stats._update_from_build_dir(build_dir)
+
+            return stats
+
+        def _update_from_build_dir(self, build_dir):
+            self.builds += 1
+            # each build has a build.meta file that is not counted as a
+            # logfile
+            self.logfiles -= 1
+            # each build directory has its own directory hierarchy with
+            # log files
+            for root, dirs, files in os.walk(build_dir):
+                self.logfiles += len(files)
+                self.size += sum(
+                    os.path.getsize(os.path.join(root, file)) for file in files
+                )
+                self._update_oldest_build(root, files)
+
+        def _update_oldest_build(self, root, files):
+            if "build.meta" not in files:
+                return
+
+            with open(os.path.join(root, "build.meta"), "r") as f:
+                build = json.load(f)
+                start_time = datetime.datetime.strptime(
+                    build["start_time"], constants.DATETIME_FORMAT
+                )
+                self.oldest_build = min(self.oldest_build, start_time)
+
+    def get_stats(self) -> Stats:
+        return self.Stats.collect(self.base_dir)
 
 
 class LogSearch:

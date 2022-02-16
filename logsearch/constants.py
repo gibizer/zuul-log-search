@@ -1,0 +1,2 @@
+# 2022-02-06T12:21:04
+DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"

@@ -115,6 +115,39 @@ class BuildsWithSignaturesTable(BuildsTable):
         self.extra_fields.append("matching_searches")
 
 
+class CacheStatsTable:
+    def __init__(self, stats: search.BuildLogCache.Stats):
+        self.stats = stats
+
+    @staticmethod
+    def _format_bytes(_bytes):
+        power = 2**10
+        n = 0
+        units = {0: "B", 1: "KB", 2: "MB", 3: "GB", 4: "TB"}
+        while _bytes > power:
+            _bytes /= power
+            n += 1
+        return f"{_bytes:.2f} {units[n]}"
+
+    def __str__(self):
+        t = prettytable.PrettyTable()
+        t.title = "Cache statistics"
+        t.header = False
+        t.add_rows(
+            [
+                ["Disk size", self._format_bytes(self.stats.size)],
+                ["Number of builds", self.stats.builds],
+                ["Number of logfiles", self.stats.logfiles],
+                [
+                    "Oldest build",
+                    self.stats.oldest_build if self.stats.builds else "",
+                ],
+            ]
+        )
+        t.align = "l"
+        return t.__str__()
+
+
 class CmdException(Exception):
     def __init__(self, msg):
         self.msg = msg
@@ -357,3 +390,9 @@ class MatchCmd(LogSearchCmd):
                 builds, self.config, build_uuid_to_stored_search_names
             )
         )
+
+
+class CacheShowCmd(Cmd):
+    def execute(self) -> None:
+        cache = search.BuildLogCache(self.config.log_store_dir, self.zuul_api)
+        print(CacheStatsTable(cache.get_stats()))
