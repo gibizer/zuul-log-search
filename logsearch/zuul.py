@@ -7,6 +7,7 @@ import os
 import requests
 
 from logsearch import constants
+from logsearch import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -90,7 +91,7 @@ class API:
         self, tenant: str, params: dict, days_ago: int
     ) -> List[Dict]:
         one_day_in_sec = datetime.timedelta(days=1).total_seconds()
-        now = self._now()
+        now = utils.now()
         target_start_date = now - datetime.timedelta(days=days_ago)
 
         original_limit = params.get("limit", 10)

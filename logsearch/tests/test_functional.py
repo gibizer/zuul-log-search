@@ -1,4 +1,5 @@
 import contextlib
+import datetime
 import io
 import os
 import sys
@@ -12,6 +13,7 @@ from logsearch import main
 from logsearch import search
 from logsearch.tests import fakes
 from logsearch import zuul
+from logsearch import constants
 
 
 @contextlib.contextmanager
@@ -1128,10 +1130,10 @@ class TestCacheShow(TestBase):
     def test_empty_cache(self):
         output = self._run_cli(args=("cache-show",))
 
-        self.assertRegex(output, r"Disk size.*| 0.00 B")
-        self.assertRegex(output, r"Number of builds.*| 0")
-        self.assertRegex(output, r"Number of logfiles.*| 0")
-        self.assertRegex(output, r"Oldest build.*| ")
+        self.assertRegex(output, r"Disk size.*\| 0.00 B")
+        self.assertRegex(output, r"Number of builds.*\| 0")
+        self.assertRegex(output, r"Number of logfiles.*\| 0")
+        self.assertRegex(output, r"Oldest build.*\| ")
 
     def test_cache_stats(self):
         patcher = mock.patch("logsearch.zuul.API")
@@ -1174,7 +1176,166 @@ class TestCacheShow(TestBase):
             # check the stats of the cache
             output = self._run_cli(cache_dir=cache_dir, args=("cache-show",))
 
-            self.assertRegex(output, r"Disk size.*| 653.00 B")
-            self.assertRegex(output, r"Number of builds.*| 2")
-            self.assertRegex(output, r"Number of logfiles.*| 4")
-            self.assertRegex(output, r"Oldest build.*| 2022-02-09 16:57:33")
+            self.assertRegex(output, r"Disk size.*\| 653.00 B")
+            self.assertRegex(output, r"Number of builds.*\| 2")
+            self.assertRegex(output, r"Number of logfiles.*\| 4")
+            self.assertRegex(output, r"Oldest build.*\| 2022-02-09 16:57:33")
+
+
+class TestPurgeShow(TestBase):
+    def test_empty_cache(self):
+        output = self._run_cli(args=("cache-purge", "--gb", "0.001"))
+
+        self.assertRegex(output, r"Disk size.*\| 0.00 B")
+        self.assertRegex(output, r"Number of builds.*\| 0")
+        self.assertRegex(output, r"Number of logfiles.*\| 0")
+        self.assertRegex(output, r"Oldest build.*\| ")
+
+        output = self._run_cli(args=("cache-purge", "--days", "1"))
+
+        self.assertRegex(output, r"Disk size.*\| 0.00 B")
+        self.assertRegex(output, r"Number of builds.*\| 0")
+        self.assertRegex(output, r"Number of logfiles.*\| 0")
+        self.assertRegex(output, r"Oldest build.*\| ")
+
+    def test_by_days(self):
+        patcher = mock.patch("logsearch.zuul.API")
+        self.addCleanup(patcher.stop)
+        mock_zuul = patcher.start()
+        fake_zuul = fakes.FakeZuul()
+        mock_zuul.return_value = fake_zuul
+
+        fake_zuul.set_builds([self.build1, self.build2])
+        fake_zuul.add_log_content(
+            self.build1["uuid"],
+            "job-output.txt",
+            "foo\n"
+            "... some-pattern and bar\n"
+            "baz\n"
+            "another some-pattern instance\n",
+        )
+        fake_zuul.add_log_content(self.build1["uuid"], "other-file", "foo")
+        fake_zuul.add_log_content(
+            self.build2["uuid"], "job-output.txt", "nothingness\n"
+        )
+        fake_zuul.add_log_content(
+            self.build2["uuid"], "other-file", "some-pattern\n"
+        )
+
+        with tempfile.TemporaryDirectory() as cache_dir:
+            # run a log search to have things in the cache
+            self._run_cli(
+                cache_dir=cache_dir,
+                args=[
+                    "log",
+                    "--file",
+                    "job-output.txt",
+                    "--file",
+                    "other-file",
+                    "pattern",
+                ],
+            )
+
+            # set the current date to the oldest build so this call should
+            # keep every build in the cache
+            with mock.patch(
+                "logsearch.utils.now",
+                return_value=datetime.datetime.strptime(
+                    self.build1["start_time"], constants.DATETIME_FORMAT
+                ),
+            ):
+                output = self._run_cli(
+                    cache_dir=cache_dir, args=("cache-purge", "--days", "1")
+                )
+                # only want to assert the cache state after the purge
+                output = output.split("Purging...", maxsplit=2)[1]
+
+            self.assertRegex(output, r"Disk size.*\| 653.00 B")
+            self.assertRegex(output, r"Number of builds.*\| 2")
+            self.assertRegex(output, r"Number of logfiles.*\| 4")
+            self.assertRegex(output, r"Oldest build.*\| 2022-02-09 16:57:33")
+
+            # now move the current time forward so that the older build is more
+            # than a day old. So the next purge call should remove the older
+            # build but keep the newer one
+            with mock.patch(
+                "logsearch.utils.now",
+                return_value=datetime.datetime.strptime(
+                    self.build1["start_time"], constants.DATETIME_FORMAT
+                )
+                + datetime.timedelta(days=1, minutes=1),
+            ):
+                output = self._run_cli(
+                    cache_dir=cache_dir, args=("cache-purge", "--days", "1")
+                )
+                # only want to assert the cache state after the purge
+                output = output.split("Purging...", maxsplit=2)[1]
+
+            self.assertRegex(output, r"Disk size.*\| 307.00 B")
+            self.assertRegex(output, r"Number of builds.*\| 1")
+            self.assertRegex(output, r"Number of logfiles.*\| 2")
+            self.assertRegex(output, r"Oldest build.*\| 2022-02-10 19:35:39")
+
+    def test_by_size(self):
+        patcher = mock.patch("logsearch.zuul.API")
+        self.addCleanup(patcher.stop)
+        mock_zuul = patcher.start()
+        fake_zuul = fakes.FakeZuul()
+        mock_zuul.return_value = fake_zuul
+
+        fake_zuul.set_builds([self.build1, self.build2])
+        fake_zuul.add_log_content(
+            self.build1["uuid"],
+            "job-output.txt",
+            "foo\n"
+            "... some-pattern and bar\n"
+            "baz\n"
+            "another some-pattern instance\n",
+        )
+        fake_zuul.add_log_content(self.build1["uuid"], "other-file", "foo")
+        fake_zuul.add_log_content(
+            self.build2["uuid"], "job-output.txt", "nothingness\n"
+        )
+        fake_zuul.add_log_content(
+            self.build2["uuid"], "other-file", "some-pattern\n"
+        )
+
+        with tempfile.TemporaryDirectory() as cache_dir:
+            # run a log search to have things in the cache
+            self._run_cli(
+                cache_dir=cache_dir,
+                args=[
+                    "log",
+                    "--file",
+                    "job-output.txt",
+                    "--file",
+                    "other-file",
+                    "pattern",
+                ],
+            )
+
+            # purge it down to 100MB, so everyting should remain
+            output = self._run_cli(
+                cache_dir=cache_dir, args=("cache-purge", "--gb", "0.1")
+            )
+            # only want to assert the cache state after the purge
+            output = output.split("Purging...", maxsplit=2)[1]
+
+            self.assertRegex(output, r"Disk size.*\| 653.00 B")
+            self.assertRegex(output, r"Number of builds.*\| 2")
+            self.assertRegex(output, r"Number of logfiles.*\| 4")
+            self.assertRegex(output, r"Oldest build.*\| 2022-02-09 16:57:33")
+
+            # now purge it down to < 653 bytes but not smaller than 300 so only
+            # the oldest build is deleted
+            output = self._run_cli(
+                cache_dir=cache_dir,
+                args=("cache-purge", "--gb", str(600 / 1024 / 1024 / 1024)),
+            )
+            # only want to assert the cache state after the purge
+            output = output.split("Purging...", maxsplit=2)[1]
+
+            self.assertRegex(output, r"Disk size.*\| 307.00 B")
+            self.assertRegex(output, r"Number of builds.*\| 1")
+            self.assertRegex(output, r"Number of logfiles.*\| 2")
+            self.assertRegex(output, r"Oldest build.*\| 2022-02-10 19:35:39")

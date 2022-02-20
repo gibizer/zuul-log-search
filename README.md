@@ -27,7 +27,7 @@ classify builds by matching them to predefined searches.
 usage: Search Zuul CI results
 
 positional arguments:
-  {build-show,build,log,storedsearch,match,cache-show}
+  {build-show,build,log,storedsearch,match,cache-show,cache-purge}
     build-show          Show the metadata of a specific build
     build               Search for builds
     log                 Search the logs of the builds
@@ -39,17 +39,22 @@ positional arguments:
                         will be ignored.
     match               Match builds with stored searches.
     cache-show          Show information of the local build cache.
+    cache-purge         Reduce the size of the local build cache.
 
 optional arguments:
   -h, --help            show this help message and exit
   --debug               Print debug logs
   --zuul-api-url ZUUL_API_URL
-                        The API url of the Zuul deployment to use. Defaulted to the OpenDev Zuul (https://zuul.opendev.org/api)
+                        The API url of the Zuul deployment to use. Defaulted
+                        to the OpenDev Zuul (https://zuul.opendev.org/api)
   --log-store-dir LOG_STORE_DIR
-                        The local directory to download the logs to. Defaulted to .logsearch/
+                        The local directory to download the logs to. Defaulted
+                        to .logsearch/
   --config-dir CONFIG_DIR
-                        The local directory storing config files and stored queries. Defaulted to .logsearch.conf.d/
-  --tenant TENANT       The name of the tenant in the Zuul installation. Defaulted to 'openstack'
+                        The local directory storing config files and stored
+                        queries. Defaulted to .logsearch.conf.d/
+  --tenant TENANT       The name of the tenant in the Zuul installation.
+                        Defaulted to 'openstack'
 ```
 
 Searching for builds
@@ -227,8 +232,9 @@ Cache management
 Most of the use cases of the tool requires downloading logs from Zuul. These
 logs are cached in the directory under ``--cache-dir`` to avoid repeated
 downloading. However, this means that this directory can grow to very big.
-With the ``cache-show`` command you can get the size and other statistcs of the
-cache easily.
+With the ``cache-show`` command you can get the size and other statistics of
+the cache easily.
 
-In the future this will be extended to support managing the size of the cache
-by purging old builds from it.
+With the ``cache-purge`` the local cache size can be reduced either to builds
+of the last N days, using the ``--days`` parameter, or to the latest builds
+with a maximum total log size in GB,  using the ``--gb`` parameter.

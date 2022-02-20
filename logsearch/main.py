@@ -21,6 +21,7 @@ class ArgHandler:
         stored_search_handler,
         match_handler,
         cache_show_handler,
+        cache_purge_handler,
     ) -> None:
         self.build_handler = build_handler
         self.build_show_handler = build_show_handler
@@ -28,6 +29,7 @@ class ArgHandler:
         self.stored_search_handler = stored_search_handler
         self.match_handler = match_handler
         self.cache_show_handler = cache_show_handler
+        self.cache_purge_handler = cache_purge_handler
 
     @staticmethod
     def _add_build_filter_args(arg_parser: argparse.ArgumentParser) -> None:
@@ -293,6 +295,31 @@ class ArgHandler:
             .execute()
         )
 
+        cache_purge_parser = subparsers.add_parser(
+            "cache-purge", help="Reduce the size of the local build cache.\n\n"
+        )
+        group = cache_purge_parser.add_mutually_exclusive_group(required=True)
+        group.add_argument(
+            "--days",
+            type=int,
+            dest="days_to_keep",
+            help="Keep the last N days of builds in the local cache.",
+        )
+        group.add_argument(
+            "--gb",
+            dest="gb_to_keep",
+            type=float,
+            help="Reduce the size of the local cache to N.M GB by keeping the "
+            "latest builds.",
+        )
+        cache_purge_parser.set_defaults(
+            func=lambda args: self.cache_purge_handler(
+                zuul.API(args.zuul_api_url)
+            )
+            .configure(args)
+            .execute()
+        )
+
         return arg_parser.parse_args(args=sys_args)
 
     def get_subcommand_handler(self, sys_args) -> Callable:
@@ -309,6 +336,7 @@ def main(args=tuple(sys.argv[1:])) -> None:
             stored_search_handler=handlers.StoredSearchCmd,
             match_handler=handlers.MatchCmd,
             cache_show_handler=handlers.CacheShowCmd,
+            cache_purge_handler=handlers.CachePurgeCmd,
         )
         handler = arg_handler.get_subcommand_handler(args)
         handler()

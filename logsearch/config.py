@@ -207,6 +207,24 @@ class Config:
             # so set a high number here to not get limited by that.
             self._args.limit = pow(10, 10)
 
+        if (
+            "days_to_keep" in self._args
+            and self._args.days_to_keep is not None
+            and self._args.days_to_keep < 1
+        ):
+            raise ConfigError(
+                "The --days parameter can only be a positive integer."
+            )
+
+        if (
+            "gb_to_keep" in self._args
+            and self._args.gb_to_keep is not None
+            and self._args.gb_to_keep <= 0.0
+        ):
+            raise ConfigError(
+                "The --gp parameter can only be a positive float."
+            )
+
         # A persistent search is requested so we need to load the search
         # config from there.
         if "search" in self._args:
@@ -317,3 +335,11 @@ class Config:
     @property
     def days_ago(self) -> int:
         return self._args.days_ago
+
+    @property
+    def days_to_keep(self) -> Optional[int]:
+        return self._args.days_to_keep
+
+    @property
+    def gb_to_keep(self) -> Optional[float]:
+        return self._args.gb_to_keep

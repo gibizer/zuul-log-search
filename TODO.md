@@ -1,5 +1,4 @@
 To do:
-- [ ] Add cache size management 
 - [ ] Add test coverage
 - [ ] Run test in Travis CI
 - [ ] Config file to provider default search config
@@ -37,3 +36,4 @@ Done:
 - [x] Add ``match`` subcommand that allows querying builds, and then tries to
   match them against stored searches
 - [x] Add new limiting options for queries, like --days-ago 7
+- [x] Add cache size management

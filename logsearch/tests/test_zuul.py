@@ -108,7 +108,7 @@ class TestZuulAPI(unittest.TestCase):
 
 
 class TestZuulAPIDaysAgo(unittest.TestCase):
-    @mock.patch("logsearch.zuul.API._now")
+    @mock.patch("logsearch.utils.now")
     @mock.patch("logsearch.zuul.API.call_zuul")
     def test_list_builds_with_days_ago_first_zuul_call_is_enough(
         self, mock_call_zuul, mock_now
@@ -158,7 +158,7 @@ class TestZuulAPIDaysAgo(unittest.TestCase):
             "a_tenant", {"job_name": set(), "branch": [], "limit": 4}
         )
 
-    @mock.patch("logsearch.zuul.API._now")
+    @mock.patch("logsearch.utils.now")
     # call_zuul takes a mutable dict as arg, so we need to record the call args
     # as deep copies
     @mock.patch("logsearch.zuul.API.call_zuul", new_callable=CopyingMock)

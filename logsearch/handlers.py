@@ -396,3 +396,15 @@ class CacheShowCmd(Cmd):
     def execute(self) -> None:
         cache = search.BuildLogCache(self.config.log_store_dir, self.zuul_api)
         print(CacheStatsTable(cache.get_stats()))
+
+
+class CachePurgeCmd(Cmd):
+    def execute(self) -> None:
+        cache = search.BuildLogCache(self.config.log_store_dir, self.zuul_api)
+        print(CacheStatsTable(cache.get_stats()))
+        print("Purging...")
+        cache.purge(
+            days_to_keep=self.config.days_to_keep,
+            max_size_gb=self.config.gb_to_keep,
+        )
+        print(CacheStatsTable(cache.get_stats()))

@@ -3,6 +3,7 @@ import dataclasses
 import datetime
 import json
 import logging
+import shutil
 import os
 from typing import List, Dict, Optional, Set
 
@@ -11,6 +12,7 @@ import ripgrepy  # type: ignore
 
 from logsearch import zuul
 from logsearch import constants
+from logsearch import utils
 
 
 LOG = logging.getLogger(__name__)
@@ -115,6 +117,79 @@ class BuildLogCache:
 
     def get_stats(self) -> Stats:
         return self.Stats.collect(self.base_dir)
+
+    def get_size(self, build):
+        size = 0
+        for root, dirs, files in os.walk(
+            os.path.join(self.base_dir, build["uuid"])
+        ):
+            size += sum(
+                os.path.getsize(os.path.join(root, file)) for file in files
+            )
+        return size
+
+    def get_build_uuids(self):
+        # the first level is one directory per build
+        it = os.scandir(self.base_dir)
+        return (os.path.basename(build_dir) for build_dir in it)
+
+    def get_build_metas(self):
+        return (
+            self.get_build_metadata(build_uuid)
+            for build_uuid in self.get_build_uuids()
+        )
+
+    def purge(self, days_to_keep: int = None, max_size_gb: float = None):
+        # enforced by the arg parser already
+        assert bool(days_to_keep) ^ bool(max_size_gb)
+        target_start_date: Optional[datetime.datetime] = None
+        if days_to_keep:
+            target_start_date = utils.now() - datetime.timedelta(
+                days=days_to_keep
+            )
+            LOG.debug(f"Target start date for kept builds {target_start_date}")
+
+        max_size_bytes = 0
+        if max_size_gb:
+            max_size_bytes = int(max_size_gb * 1024 * 1024 * 1024)
+
+        builds_in_cache = self.get_build_metas()
+        # let's sort backwards in time
+        builds_in_cache = sorted(
+            builds_in_cache,
+            key=lambda build: datetime.datetime.strptime(
+                build["start_time"], constants.DATETIME_FORMAT
+            ),
+            reverse=True,
+        )
+
+        # find the last build we can keep
+        size_sum = 0
+        start_to_delete = 0
+        for idx, build in enumerate(builds_in_cache):
+            size = self.get_size(build)
+            start_date = datetime.datetime.strptime(
+                build["start_time"], constants.DATETIME_FORMAT
+            )
+
+            if target_start_date and start_date < target_start_date:
+                break
+
+            if max_size_bytes and size_sum + size > max_size_bytes:
+                break
+
+            # we can keep the current build
+            start_to_delete = idx + 1
+            size_sum += size
+
+        # then delete the rest
+        num_to_delete = len(builds_in_cache[start_to_delete:])
+        for idx, build in enumerate(builds_in_cache[start_to_delete:]):
+            LOG.debug(f'Deleting build {build["uuid"]}')
+            print(f"\rDeleting {num_to_delete}/{idx + 1}", end="")
+            shutil.rmtree(os.path.join(self.base_dir, build["uuid"]))
+        if num_to_delete:
+            print()
 
 
 class LogSearch:
