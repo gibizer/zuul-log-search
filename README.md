@@ -33,12 +33,11 @@ positional arguments:
     build               Search for builds
     log                 Search the logs of the builds
     storedsearch        Run a search defined in the configuration. The
-                        command line args can be used to fine tune the
-                        stored search where the configuration does not
-                        specify a given parameter. If a parameter is
-                        specified by the stored search then the
-                        corresponding command line parameter will be
-                        ignored.
+                        command line args can be used to fine tune the stored
+                        search where the configuration does not specify a
+                        given parameter. If a parameter is specified by the
+                        stored search then the corresponding command line
+                        parameter will be ignored.
     match               Match builds with stored searches.
     cache-show          Show information of the local build cache.
     cache-purge         Reduce the size of the local build cache.
@@ -47,12 +46,11 @@ options:
   -h, --help            show this help message and exit
   --debug               Print debug logs
   --zuul-api-url ZUUL_API_URL
-                        The API url of the Zuul deployment to use.
-                        Defaulted to the OpenDev Zuul
-                        (https://zuul.opendev.org/api)
+                        The API url of the Zuul deployment to use. Defaulted
+                        to the OpenDev Zuul (https://zuul.opendev.org/api)
   --log-store-dir LOG_STORE_DIR
                         The local directory to download the logs to.
-                        Defaulted to .logsearch/
+                        Defaulted to ~/.cache/logsearch/
   --config-dir CONFIG_DIR
                         The local directory storing config files and stored
                         queries. If not provided then the tool checks the

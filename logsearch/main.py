@@ -171,9 +171,9 @@ class ArgHandler:
         arg_parser.add_argument(
             "--log-store-dir",
             dest="log_store_dir",
-            default=".logsearch/",
+            default=os.path.expanduser("~/.cache/logsearch/"),
             help="The local directory to download the logs to. "
-            "Defaulted to .logsearch/",
+            "Defaulted to ~/.cache/logsearch/",
         )
 
         def config_dir_location(value: Optional[str]) -> str:

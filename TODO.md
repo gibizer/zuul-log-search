@@ -13,7 +13,6 @@ To do:
       Accept subdir prefixed stored search name
       Accept filename instead of stored search name from the file
 - [ ] ? ability to match for test case failed / passed
-- [ ] revamp cache dir handling. Change the default to i.e. ~/.cache
 
 Done:
 - [x] Pre validate regex coming from the command line
@@ -37,3 +36,4 @@ Done:
 - [x] Add cache size management
 - [x] revamp config dir handling. Read them from different places in a
       meaningful order. I.e. pwd then if that not exists then ~/.config
+- [x] revamp cache dir handling. Change the default to i.e. ~/.cache
