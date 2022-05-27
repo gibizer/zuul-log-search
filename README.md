@@ -1,3 +1,5 @@
+![workflow-badge](https://github.com/gibizer/zuul-log-search/actions/workflows/tox.yaml/badge.svg)
+
 Tool to search the build results and log files of a Zuul deployment
 
 Install

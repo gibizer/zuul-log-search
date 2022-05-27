@@ -1,6 +1,5 @@
 To do:
 - [ ] Add test coverage
-- [ ] Run test in Travis CI
 - [ ] Config file to provider default search config
 - [ ] Support multi line regex
 - [ ] Make the output format of the log subcommand configurable. E.g. full,
@@ -37,3 +36,4 @@ Done:
 - [x] revamp config dir handling. Read them from different places in a
       meaningful order. I.e. pwd then if that not exists then ~/.config
 - [x] revamp cache dir handling. Change the default to i.e. ~/.cache
+- [x] Run test in ~~Travis CI~~ Github Actions
