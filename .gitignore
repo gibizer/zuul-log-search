@@ -5,4 +5,4 @@
 *.egg-info/*
 *.pyc
 .logsearch.conf.d/*
-!.logsearch.conf.d/conf_sample.conf
+!.logsearch.conf.d/conf_sample.yaml

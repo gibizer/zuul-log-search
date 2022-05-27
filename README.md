@@ -143,7 +143,7 @@ Stored searches
 If you have searches that you want to run regularly you can define it in a
 configuration file with an alias and then use the ``storedsearch`` command in
 the command line to invoke the stored query. See
-[example](.logsearch.conf.d/conf_sample.conf).
+[example](.logsearch.conf.d/conf_sample.yaml).
 
 When running stored searches you can fine tune the query with same CLI
 parameters than in normal logsearch. But note that only those parameters can
@@ -224,7 +224,7 @@ Instead of listing multiple ``--job`` parameters in the command line to filter
 for multiple jobs you can define job groups in the configuration assigning an
 alias for a list of jobs and then you can use the ``--job-group`` parameter to
 refer to the list of jobs with the alias.
-See [example](.logsearch.conf.d/conf_sample.conf).
+See [example](.logsearch.conf.d/conf_sample.yaml).
 
 
 Cache management

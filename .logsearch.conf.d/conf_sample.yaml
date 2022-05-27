@@ -19,6 +19,7 @@
 #
 # You can define stored searches here or in separate files in the conf
 # directory.
+# searches:
 #  example-stored-search:
 #    project: example-project
 #    pipeline: gate
@@ -41,6 +42,7 @@
 #    regex: 'some failure pattern'
 #
 # E.g.:
+# searches:
 #  bug-1931864:
 #    project: openstack/nova
 #    branches:

@@ -15,7 +15,7 @@ To do:
 - [ ] ? ability to match for test case failed / passed
 - [ ] revamp cache dir handling. Change the default to i.e. ~/.cache
 - [ ] revamp config dir handling. Read them from different places in a 
-      meaningful order. I.e. pwd then if that not exists then ~/.cache
+      meaningful order. I.e. pwd then if that not exists then ~/.config
 
 Done:
 - [x] Pre validate regex coming from the command line
