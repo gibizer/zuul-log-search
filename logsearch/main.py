@@ -3,7 +3,8 @@ import logging
 import re
 import sys
 import traceback
-from typing import Callable
+from typing import Callable, Optional
+import os
 
 from logsearch import config
 from logsearch import handlers
@@ -174,12 +175,32 @@ class ArgHandler:
             help="The local directory to download the logs to. "
             "Defaulted to .logsearch/",
         )
+
+        def config_dir_location(value: Optional[str]) -> str:
+            if value:
+                return value
+
+            if os.path.exists(".logsearch.conf.d/"):
+                return ".logsearch.conf.d/"
+
+            base = os.getenv(
+                "XDG_CONFIG_HOME", default=os.path.expanduser("~/.config")
+            )
+            return os.path.join(base, "logsearch")
+
         arg_parser.add_argument(
             "--config-dir",
             dest="config_dir",
-            default=".logsearch.conf.d/",
+            # NOTE(gibi): None value cannot be used as that is not triggering
+            # the type() call
+            default="",
+            type=config_dir_location,
             help="The local directory storing config files and stored "
-            "queries. Defaulted to .logsearch.conf.d/",
+            "queries. If not provided then the tool checks the following "
+            "locations in order. It uses .logsearch.conf.d/ in the current "
+            "directory if exists. Otherwise, uses $XDG_CONFIG_HOME/logsearch/ "
+            "if XDG_CONFIG_HOME is defined. Otherwise, uses "
+            "~/.config/logsearch/.",
         )
         arg_parser.add_argument(
             "--tenant",

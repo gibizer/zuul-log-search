@@ -14,8 +14,6 @@ To do:
       Accept filename instead of stored search name from the file
 - [ ] ? ability to match for test case failed / passed
 - [ ] revamp cache dir handling. Change the default to i.e. ~/.cache
-- [ ] revamp config dir handling. Read them from different places in a 
-      meaningful order. I.e. pwd then if that not exists then ~/.config
 
 Done:
 - [x] Pre validate regex coming from the command line
@@ -37,3 +35,5 @@ Done:
   match them against stored searches
 - [x] Add new limiting options for queries, like --days-ago 7
 - [x] Add cache size management
+- [x] revamp config dir handling. Read them from different places in a
+      meaningful order. I.e. pwd then if that not exists then ~/.config

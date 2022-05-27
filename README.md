@@ -24,6 +24,7 @@ You can search for builds, search in the logs of such builds, or try to
 classify builds by matching them to predefined searches.
 
 ```shell
+$ logsearch --help
 usage: Search Zuul CI results
 
 positional arguments:
@@ -31,28 +32,35 @@ positional arguments:
     build-show          Show the metadata of a specific build
     build               Search for builds
     log                 Search the logs of the builds
-    storedsearch        Run a search defined in the configuration. The command
-                        line args can be used to fine tune the stored search
-                        where the configuration does not specify a given
-                        parameter. If a parameter is specified by the stored
-                        search then the corresponding command line parameter
-                        will be ignored.
+    storedsearch        Run a search defined in the configuration. The
+                        command line args can be used to fine tune the
+                        stored search where the configuration does not
+                        specify a given parameter. If a parameter is
+                        specified by the stored search then the
+                        corresponding command line parameter will be
+                        ignored.
     match               Match builds with stored searches.
     cache-show          Show information of the local build cache.
     cache-purge         Reduce the size of the local build cache.
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --debug               Print debug logs
   --zuul-api-url ZUUL_API_URL
-                        The API url of the Zuul deployment to use. Defaulted
-                        to the OpenDev Zuul (https://zuul.opendev.org/api)
+                        The API url of the Zuul deployment to use.
+                        Defaulted to the OpenDev Zuul
+                        (https://zuul.opendev.org/api)
   --log-store-dir LOG_STORE_DIR
-                        The local directory to download the logs to. Defaulted
-                        to .logsearch/
+                        The local directory to download the logs to.
+                        Defaulted to .logsearch/
   --config-dir CONFIG_DIR
                         The local directory storing config files and stored
-                        queries. Defaulted to .logsearch.conf.d/
+                        queries. If not provided then the tool checks the
+                        following locations in order. It uses
+                        .logsearch.conf.d/ in the current directory if
+                        exists. Otherwise, uses $XDG_CONFIG_HOME/logsearch/
+                        if XDG_CONFIG_HOME is defined. Otherwise, uses
+                        ~/.config/logsearch/.
   --tenant TENANT       The name of the tenant in the Zuul installation.
                         Defaulted to 'openstack'
 ```
@@ -143,7 +151,7 @@ Stored searches
 If you have searches that you want to run regularly you can define it in a
 configuration file with an alias and then use the ``storedsearch`` command in
 the command line to invoke the stored query. See
-[example](.logsearch.conf.d/conf_sample.yaml).
+[example](config/.logsearch.conf.d/conf_sample.yaml).
 
 When running stored searches you can fine tune the query with same CLI
 parameters than in normal logsearch. But note that only those parameters can
@@ -212,11 +220,14 @@ $ logsearch match --job-group nova-devstack --project openstack/nova --branch ma
 
 Configuration
 =============
-The ``logsearch.conf.d`` directory is searched for config files. The directory
-location can be also provided via ``--config-dir`` command line parameter.
-Every file with names ending in ``.yaml`` or ``.conf`` is read from the
-directory as yaml data and the data are merged by the top level key.
-So you can separate out different part of the configuration to different files.
+The configuration directory location can be also provided via ``--config-dir``
+command line parameter. If not provided then the tool checks the following
+locations in order. It uses .logsearch.conf.d/ in the current directory if
+exists. Otherwise, uses ```$XDG_CONFIG_HOME/logsearch/``` if
+``XDG_CONFIG_HOME`` is  defined. Otherwise, uses ``~/.config/logsearch/``.
+Every file under the config directory with names ending in ``.yaml`` or
+``.conf`` is read as yaml data and  merged by the top level key.  So you can
+separate out different part of the configuration to different files.
 
 Job groups
 ----------
@@ -224,7 +235,7 @@ Instead of listing multiple ``--job`` parameters in the command line to filter
 for multiple jobs you can define job groups in the configuration assigning an
 alias for a list of jobs and then you can use the ``--job-group`` parameter to
 refer to the list of jobs with the alias.
-See [example](.logsearch.conf.d/conf_sample.yaml).
+See [example](config/.logsearch.conf.d/conf_sample.yaml).
 
 
 Cache management
