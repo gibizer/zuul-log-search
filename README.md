@@ -5,7 +5,7 @@ Tool to search the build results and log files of a Zuul deployment
 Install
 =======
 
-This tool depends on [``ripgrep``](https://github.com/BurntSushi/ripgrep) a 
+This tool depends on [``ripgrep``](https://github.com/BurntSushi/ripgrep) a
 fast and efficient ``grep`` clone written in Rust. So you have to first install
 ``ripgrep``:
 
@@ -16,7 +16,7 @@ $ sudo apt install ripgrep
 Then you can install zuul-log-search:
 
 ```shell
-$ pip install git+http://github.com/gibizer/zuul-log-search  
+$ pip install git+http://github.com/gibizer/zuul-log-search
 ```
 
 Usage
@@ -100,8 +100,8 @@ See ``logsearch build --help`` for details.
 
 Searching in the logs of the builds
 -----------------------------------
-Search the recent failed nova-next job runs for a certain errors in the 
-nova-compute logs: 
+Search the recent failed nova-next job runs for a certain errors in the
+nova-compute logs:
 ```shell
 $ logsearch log --project openstack/nova --branch master --job nova-next --result FAILURE --file controller/logs/screen-n-cpu.txt 'ERROR .* iscsiadm -m discoverydb -o show -P 1'
 Found matching builds:
@@ -142,7 +142,7 @@ Searching logs:
 36e4d5a4b95b4879b5bac7c7507a83b8:31638:May 26 18:06:49.029138 ubuntu-focal-ovh-bhs1-0024830866 nova-compute[110234]: ERROR os_brick.initiator.connectors.iscsi Command: iscsiadm -m discoverydb -o show -P 1
 ```
 
-Note that this command download the logfile to the local cache directory so 
+Note that this command download the logfile to the local cache directory so
 this might take a while. However, repeated searches in the same logs will use
 the local cache.
 
