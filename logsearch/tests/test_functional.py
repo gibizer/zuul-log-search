@@ -595,6 +595,61 @@ class TestLogSearch(TestBase):
         self.assertIn("fake-url", output)
         self.assertIn("1/1", output)
 
+    def test_two_regex_same_file(self):
+        self.fake_zuul.set_builds([self.build1, self.build2])
+        self.fake_zuul.add_log_content(
+            self.build1["uuid"],
+            "job-output.txt",
+            "foo\n"
+            "... pattern1 and bar\n"
+            "baz\n"
+            "and pattern2 instance\n",
+        )
+        self.fake_zuul.add_log_content(
+            self.build1["uuid"], "other-file", "foo"
+        )
+        self.fake_zuul.add_log_content(
+            self.build2["uuid"], "job-output.txt", "nothingness\n"
+        )
+        self.fake_zuul.add_log_content(
+            self.build2["uuid"], "other-file", "pattern1\n"
+        )
+
+        output = self._run_cli(
+            args=[
+                "log",
+                "--file",
+                "job-output.txt",
+                "--file",
+                "other-file",
+                "pattern1",
+                "pattern2",
+            ]
+        )
+
+        self.assertRegex(
+            output, "fake-uuid:.*job-output.txt:2:... pattern1 and bar"
+        )
+        self.assertRegex(
+            output,
+            "fake-uuid:.*job-output.txt:4:and pattern2 instance",
+        )
+        self.assertNotRegex(output, r"fake-uuid:\w+other-file")
+        self.assertNotRegex(output, r"fake-uuid2:\w+other-file")
+        self.assertNotRegex(output, r"fake-uuid2:\w+job-output.txt")
+        self.assertIn("fake-url", output)
+        self.assertIn("fake-url2", output)
+        self.assertNotIn("foo", output)
+        self.assertNotIn("baz", output)
+        self.assertIn("1/2", output)
+        print(output)
+
+    def test_two_regex_different_file(self):
+        pass
+
+    def test_two_regex_only_one_match(self):
+        pass
+
     def test_stored_search_not_found(self):
         config = {
             "searches": {
@@ -928,6 +983,9 @@ class TestLogSearch(TestBase):
             ),
             self.fake_zuul.list_build_calls[0],
         )
+
+    def test_stored_search_two_regex(self):
+        pass
 
     def test_match(self):
         # no stored search queries for the dev branch so this build will not

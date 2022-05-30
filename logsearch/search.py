@@ -207,7 +207,7 @@ class LogSearch:
     def get_matches(
         self,
         local_paths: Set[str],
-        regexp: str,
+        regex: str,
         before_context: Optional[int],
         after_context: Optional[int],
         context: Optional[int],
@@ -216,7 +216,7 @@ class LogSearch:
         # root logger
         with self._silence_log():
             # TODO(gibi): Change Ripgrepy to support multiple paths naturally
-            rg = ripgrepy.Ripgrepy(regexp, " ".join(local_paths))
+            rg = ripgrepy.Ripgrepy(regex, " ".join(local_paths))
             rg.line_number()
             if before_context:
                 rg.before_context(before_context)
@@ -229,3 +229,43 @@ class LogSearch:
             result = rg.run()
             lines = result.as_string.splitlines()
         return lines
+
+
+class MultiRegexLogSearch:
+    def get_matches(
+        self,
+        local_paths: Set[str],
+        regex: List[str],
+        before_context: Optional[int],
+        after_context: Optional[int],
+        context: Optional[int],
+    ) -> List[str]:
+
+        if len(regex) == 1:
+            # avoid unnecessary overhead of collating results from multiple
+            # searches
+            return LogSearch().get_matches(
+                local_paths, regex[0], before_context, after_context, context
+            )
+
+        all_matches = []
+        for pattern in regex:
+            matches = LogSearch().get_matches(
+                local_paths, pattern, before_context, after_context, context
+            )
+
+            # each pattern needs to match somewhere in the build. If one
+            # pattern has no match then we can shortcut.
+            if not matches:
+                return []
+
+            # NOTE(gibi): this gives two separate block of results if two
+            # patterns found in the same file. We can fix that by sorting the
+            # output as all lines are prefixed with 'filename:lineno:' by
+            # ripgrep. This still gives duplicate lines if both pattern matched
+            # at the same line in the same file. Ignore this problem now as
+            # such situation can be avoided if the two patterns (p1, p2) are
+            # combined into a  single 'p1.*p2|p2.*p1' pattern.
+            all_matches += matches
+
+        return sorted(all_matches)

@@ -1,7 +1,6 @@
 To do:
 - [ ] Add test coverage
 - [ ] Config file to provider default search config
-- [ ] Support multi line regex
 - [ ] Make the output format of the log subcommand configurable. E.g. full,
   only-matched-lines
 - [ ] add --print-signature flag to log subcommand to print out the stored
@@ -12,6 +11,14 @@ To do:
       Accept subdir prefixed stored search name
       Accept filename instead of stored search name from the file
 - [ ] ? ability to match for test case failed / passed
+- [ ] color the matches in the output
+- [ ] ? support backreference between patterns, e.g.: one pattern has a group
+      for request-id and refer to the matched request-id in another pattern.
+      This leads to expanding later patterns to use all the matches of the
+      referenced group from the earlier pattern.
+      ```$ logsearch log '(req-[^ ]+ ).*failure' '\G1.* another failure'```
+      This is not the same as backreference within a pattern in regex. That
+      is not supported by default by ripgrep but could be enabled via a flag.
 
 Done:
 - [x] Pre validate regex coming from the command line
@@ -37,3 +44,4 @@ Done:
       meaningful order. I.e. pwd then if that not exists then ~/.config
 - [x] revamp cache dir handling. Change the default to i.e. ~/.cache
 - [x] Run test in ~~Travis CI~~ Github Actions
+- [ ] Support ~~multi line~~ multiple regex in a single search

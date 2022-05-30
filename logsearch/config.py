@@ -125,12 +125,24 @@ class PersistentSearch:
         return self._search.get("days_ago")
 
     @property
-    def regex(self) -> str:
+    def regex(self) -> List[str]:
         if "regex" not in self._search:
             raise ConfigError(
                 f"The regex parameter is missing from {self.name} stored "
                 f"search, but it is mandatory."
             )
+        # Handle backward compatibility. In the past only a single value
+        # was supported for regex, but now we need to handle that it is either
+        # a single pattern value or a list of pattern values.
+        if not isinstance(self._search["regex"], list):
+            return [self._search["regex"]]
+
+        if len(self._search["regex"]) == 0:
+            raise ConfigError(
+                f"At least one regex pattern is expected in {self.name} "
+                f"stored search."
+            )
+
         return self._search["regex"]
 
     @property
@@ -161,8 +173,8 @@ class NullPersistentSearch(PersistentSearch):
         super(NullPersistentSearch, self).__init__("null-search", {}, config)
 
     @property
-    def regex(self) -> str:
-        return ""
+    def regex(self) -> List[str]:
+        return []
 
 
 class Config:
@@ -278,7 +290,7 @@ class Config:
         return self._requested_search.limit or self._args.limit
 
     @property
-    def regex(self) -> str:
+    def regex(self) -> List[str]:
         return self._requested_search.regex or self._args.regex
 
     @property

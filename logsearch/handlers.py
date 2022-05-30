@@ -218,7 +218,7 @@ class BuildCmd(Cmd):
 class LogSearchCmd(Cmd):
     def __init__(self, zuul_api: zuul.API) -> None:
         super().__init__(zuul_api)
-        self.ls = search.LogSearch()
+        self.ls = search.MultiRegexLogSearch()
 
     def _search_logs(self, build_uuid_to_build, build_uuid_to_files, builds):
         matching_builds = []
