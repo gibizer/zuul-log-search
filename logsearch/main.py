@@ -261,7 +261,12 @@ class ArgHandler:
 
         log_parser.add_argument(
             "regex",
-            help="A regular expression to search for.",
+            nargs="+",
+            help="A regular expression to search for. If more than one "
+            "pattern is provided, then a build considered matching if all "
+            "patterns are found in the logs of the build. If you need "
+            "patterns with OR relationship instead then combine the patterns "
+            "into a single pattern with '|'.",
             type=regex,
         )
         log_parser.set_defaults(
