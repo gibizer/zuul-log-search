@@ -1,6 +1,7 @@
 import argparse
 import collections
 import logging
+import shutil
 from typing import List, Dict, Any
 
 import prettytable  # type: ignore
@@ -34,6 +35,9 @@ class BuildTable:
             ]
         )
         t.align = "l"
+        # Constant 5 was determined experimentally with terminal width
+        # more or equal 30.
+        t.max_table_width = shutil.get_terminal_size().columns - 5
         return t.__str__()
 
 
