@@ -3,6 +3,7 @@ import datetime
 import tempfile
 import unittest
 from unittest import mock
+from typing import List, Dict
 
 import requests
 
@@ -16,11 +17,14 @@ class CopyingMock(mock.MagicMock):
         return super().__call__(*args, **kwargs)
 
 
+EMPTY_RESULT: List[Dict] = [{}]
+
+
 class TestZuulAPI(unittest.TestCase):
     @mock.patch("requests.get")
     def test_list_builds(self, mock_get):
         mock_rsp = mock.Mock(spec=requests.Response)
-        mock_rsp.json.return_value = mock.sentinel.json_rsp
+        mock_rsp.json.return_value = EMPTY_RESULT
         mock_get.return_value = mock_rsp
 
         api = zuul.API(zuul_url="https://fake_url")
@@ -39,7 +43,7 @@ class TestZuulAPI(unittest.TestCase):
             days_ago=None,
         )
 
-        self.assertEqual(mock.sentinel.json_rsp, result)
+        self.assertEqual(EMPTY_RESULT, result)
         mock_get.assert_called_once_with(
             "https://fake_url/tenant/sentinel.tenant/builds",
             params={
@@ -53,7 +57,7 @@ class TestZuulAPI(unittest.TestCase):
     @mock.patch("requests.get")
     def test_list_builds_args(self, mock_get):
         mock_rsp = mock.Mock(spec=requests.Response)
-        mock_rsp.json.return_value = mock.sentinel.json_rsp
+        mock_rsp.json.return_value = EMPTY_RESULT
         mock_get.return_value = mock_rsp
 
         api = zuul.API(zuul_url="https://fake_url")
@@ -216,3 +220,67 @@ class TestZuulAPIDaysAgo(unittest.TestCase):
                 ),
             ]
         )
+
+
+class TestZuulAPINormalizers(unittest.TestCase):
+    @mock.patch("requests.get")
+    def test_list_build_ref_url_normalization(self, mock_get):
+        mock_rsp = mock.Mock(spec=requests.Response)
+        mock_rsp.json.return_value = [
+            {"ref_url": "https://opendev.org/openstack/neutron/commit/None"}
+        ]
+        mock_get.return_value = mock_rsp
+
+        api = zuul.API(zuul_url="https://fake_url")
+
+        result = api.list_builds(
+            tenant=mock.sentinel.tenant,
+            project="openstack/neutron",
+            pipeline="periodic",
+            branches=[],
+            jobs=set(),
+            result=None,
+            limit=None,
+            voting=None,
+            change=None,
+            patchset=None,
+            days_ago=None,
+        )
+
+        self.assertEqual([{"ref_url": None}], result)
+        mock_get.assert_called_once_with(
+            "https://fake_url/tenant/sentinel.tenant/builds",
+            params={
+                "project": "openstack/neutron",
+                "pipeline": "periodic",
+                "job_name": set(),
+                "branch": [],
+            },
+        )
+        mock_rsp.json.assert_called_once_with()
+        mock_rsp.raise_for_status.assert_called_once_with()
+
+    @mock.patch("requests.get")
+    def test_get_build_ref_url_normalization(self, mock_get):
+        mock_rsp = mock.Mock(spec=requests.Response)
+        mock_rsp.json.return_value = [
+            {"ref_url": "https://opendev.org/openstack/neutron/commit/None"}
+        ]
+        mock_get.return_value = mock_rsp
+
+        api = zuul.API(zuul_url="https://fake_url")
+
+        result = api.get_build(
+            tenant=mock.sentinel.tenant,
+            build_uuid="53d0f6d71d514992a3b44a9caa5b901f",
+        )
+
+        self.assertEqual({"ref_url": None}, result)
+        mock_get.assert_called_once_with(
+            "https://fake_url/tenant/sentinel.tenant/builds",
+            params={
+                "uuid": "53d0f6d71d514992a3b44a9caa5b901f",
+            },
+        )
+        mock_rsp.json.assert_called_once_with()
+        mock_rsp.raise_for_status.assert_called_once_with()
