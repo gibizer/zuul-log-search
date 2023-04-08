@@ -18,7 +18,7 @@ class PersistentConfig:
 
     CONFIG_FILE_EXTENSIONS = [".conf", ".yaml"]
 
-    def __init__(self, config_dir):
+    def __init__(self, config_dir: str):
         self._job_groups: Dict[str, List[str]] = {}
         self._searches_dict: Dict[str, Dict] = {}
         self._init_from_dir(config_dir)

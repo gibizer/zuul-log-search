@@ -4,7 +4,7 @@ import io
 import os
 import sys
 import tempfile
-from typing import Generator, Dict, Iterable
+from typing import Generator, Dict, Iterable, Optional
 import unittest
 from unittest import mock
 import yaml
@@ -68,9 +68,9 @@ class TestBase(unittest.TestCase):
 
     @staticmethod
     def _run_cli(
-        config: Dict = None,
+        config: Optional[Dict] = None,
         args: Iterable[str] = (),
-        cache_dir: str = None,
+        cache_dir: Optional[str] = None,
     ) -> str:
         with collect_stdout() as stdout:
             with test_config(config or {}) as config_dir:

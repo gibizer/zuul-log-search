@@ -139,7 +139,11 @@ class BuildLogCache:
             for build_uuid in self.get_build_uuids()
         )
 
-    def purge(self, days_to_keep: int = None, max_size_gb: float = None):
+    def purge(
+        self,
+        days_to_keep: Optional[int] = None,
+        max_size_gb: Optional[float] = None,
+    ):
         # enforced by the arg parser already
         assert bool(days_to_keep) ^ bool(max_size_gb)
         target_start_date: Optional[datetime.datetime] = None
