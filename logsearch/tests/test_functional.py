@@ -396,7 +396,6 @@ class TestBuildShow(TestBase):
 
     @mock.patch("logsearch.zuul.API.get_build")
     def test_not_cached(self, mock_get_build):
-
         mock_get_build.return_value = self.build1
 
         output = self._run_cli(args=["build-show", "fake-uuid"])
