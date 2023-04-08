@@ -66,6 +66,14 @@ class TestBase(unittest.TestCase):
             "log_url": "fake-log-url",
         }
 
+        # fix the size of the terminal so that the output wrapping is stable
+        patcher = mock.patch(
+            "shutil.get_terminal_size",
+            return_value=os.terminal_size((160, 24)),
+        )
+        self.addCleanup(patcher.stop)
+        patcher.start()
+
     @staticmethod
     def _run_cli(
         config: Optional[Dict] = None,
