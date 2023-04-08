@@ -1,4 +1,4 @@
 prettytable
 PyYAML
 requests
-ripgrepy
+ripgrepy<2.0
