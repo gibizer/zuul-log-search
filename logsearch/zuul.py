@@ -27,7 +27,7 @@ class API:
                 params={"uuid": build_uuid},
             )
             r.raise_for_status()
-            builds = r.json()
+            builds = self._normalize_builds(r.json())
             if len(builds) == 0:
                 raise ZuulException(f"Build {build_uuid} not found")
             if len(builds) > 1:
@@ -141,7 +141,7 @@ class API:
                 self.zuul_url + f"/tenant/{tenant}/builds", params=params
             )
             r.raise_for_status()
-            return r.json()
+            return self._normalize_builds(r.json())
         except requests.RequestException as e:
             raise ZuulException("Cannot access Zuul") from e
 
@@ -157,3 +157,19 @@ class API:
                     f.write(chunk)
                     i += 1
                     progress_handler(i)
+
+    def _normalize_builds(self, builds: List[Dict]) -> List[Dict]:
+        return [self._normalize_build(build) for build in builds]
+
+    def _normalize_build(self, build: Dict) -> Dict:
+        build = self._convert_ref_url(build)
+        return build
+
+    def _convert_ref_url(self, build: Dict) -> Dict:
+        if "ref_url" in build:
+            # NOTE(gibi): Zuul returns a fake review URL if the job is not
+            # connected to a specific review, e.g. it was run due to a periodic
+            # job
+            if build["ref_url"].endswith("commit/None"):
+                build["ref_url"] = None
+        return build
