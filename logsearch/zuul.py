@@ -162,7 +162,14 @@ class API:
         return [self._normalize_build(build) for build in builds]
 
     def _normalize_build(self, build: Dict) -> Dict:
+        build = self._flatten_ref(build)
         build = self._convert_ref_url(build)
+        return build
+
+    def _flatten_ref(self, build: Dict) -> Dict:
+        if "ref" in build and isinstance(build["ref"], dict):
+            for k, v in build["ref"].items():
+                build[k] = v
         return build
 
     def _convert_ref_url(self, build: Dict) -> Dict:
